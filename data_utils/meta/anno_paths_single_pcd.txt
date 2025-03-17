@@ -1,0 +1,3 @@
+Area_5/conferenceRoom_1/Annotations
+Area_5/conferenceRoom_2/Annotations
+Area_5/conferenceRoom_3/Annotations

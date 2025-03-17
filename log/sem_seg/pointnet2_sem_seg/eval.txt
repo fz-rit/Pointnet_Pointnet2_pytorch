@@ -186,3 +186,40 @@ class clutter       , IoU: 0.428
 2025-03-16 23:52:56,825 - Model - INFO - eval point avg class IoU: 0.543399
 2025-03-16 23:52:56,825 - Model - INFO - eval whole scene point avg class acc: 0.642473
 2025-03-16 23:52:56,825 - Model - INFO - eval whole scene point accuracy: 0.834520
+2025-03-17 11:38:30,463 - Model - INFO - PARAMETER ...
+2025-03-17 11:38:30,463 - Model - INFO - Namespace(batch_size=32, gpu='0', log_dir='pointnet2_sem_seg', num_point=4096, num_votes=3, test_area=5, visual=True)
+2025-03-17 11:39:00,318 - Model - INFO - PARAMETER ...
+2025-03-17 11:39:00,318 - Model - INFO - Namespace(batch_size=32, gpu='0', log_dir='pointnet2_sem_seg', num_point=4096, num_votes=3, test_area=5, visual=True)
+2025-03-17 11:39:00,465 - Model - INFO - The number of test data is: 3
+2025-03-17 11:45:14,400 - Model - INFO - PARAMETER ...
+2025-03-17 11:45:14,400 - Model - INFO - Namespace(batch_size=32, gpu='0', log_dir='pointnet2_sem_seg', num_point=4096, num_votes=3, test_area=5, visual=True)
+2025-03-17 11:45:14,547 - Model - INFO - The number of test data is: 3
+2025-03-17 12:02:04,378 - Model - INFO - PARAMETER ...
+2025-03-17 12:02:04,378 - Model - INFO - Namespace(batch_size=32, gpu='0', log_dir='pointnet2_sem_seg', num_point=4096, num_votes=3, test_area=5, visual=True)
+2025-03-17 12:02:04,560 - Model - INFO - The number of test data is: 3
+2025-03-17 12:02:04,663 - Model - INFO - ---- EVALUATION WHOLE SCENE----
+2025-03-17 12:58:46,378 - Model - INFO - PARAMETER ...
+2025-03-17 12:58:46,378 - Model - INFO - Namespace(batch_size=32, gpu='0', log_dir='pointnet2_sem_seg', num_point=4096, num_votes=3, test_area=5, visual=True)
+2025-03-17 12:58:46,545 - Model - INFO - The number of test data is: 3
+2025-03-17 12:58:46,624 - Model - INFO - ---- EVALUATION WHOLE SCENE----
+2025-03-17 13:00:35,450 - Model - INFO - Mean IoU of Area_5_conferenceRoom_2: 0.5380
+2025-03-17 13:01:58,128 - Model - INFO - Mean IoU of Area_5_conferenceRoom_3: 0.5956
+2025-03-17 13:02:52,733 - Model - INFO - Mean IoU of Area_5_conferenceRoom_1: 0.5432
+2025-03-17 13:02:54,011 - Model - INFO - ------- IoU --------
+class ceiling       , IoU: 0.928 
+class floor         , IoU: 0.970 
+class wall          , IoU: 0.703 
+class beam          , IoU: 0.000 
+class column        , IoU: 0.026 
+class window        , IoU: 0.598 
+class door          , IoU: 0.156 
+class table         , IoU: 0.600 
+class chair         , IoU: 0.822 
+class sofa          , IoU: 0.518 
+class bookcase      , IoU: 0.392 
+class board         , IoU: 0.332 
+class clutter       , IoU: 0.365 
+
+2025-03-17 13:02:54,011 - Model - INFO - eval point avg class IoU: 0.493015
+2025-03-17 13:02:54,011 - Model - INFO - eval whole scene point avg class acc: 0.627257
+2025-03-17 13:02:54,012 - Model - INFO - eval whole scene point accuracy: 0.817695

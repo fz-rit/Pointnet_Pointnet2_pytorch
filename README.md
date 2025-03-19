@@ -30,7 +30,7 @@ This repo is implementation for [PointNet](http://openaccess.thecvf.com/content_
 ## Install
 On Ubuntu 24.04, CUDA12.0, PyTorch 2.4.1 and Python 3.8:
 ```shell
-conda create -n pointnet_env python=3.8 numpy tqdm -y
+conda create -n pointnet_env python=3.8 numpy tqdm pandas -y
 conda activate pointnet_env
 conda install pytorch torchvision torchaudio pytorch-cuda -c pytorch -c nvidia -y
 ```

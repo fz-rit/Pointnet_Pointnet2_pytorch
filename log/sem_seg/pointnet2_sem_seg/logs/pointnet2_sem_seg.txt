@@ -1029,3 +1029,18 @@ class clutter        weight: 0.011, IoU: 0.409
 2021-03-23 12:47:10,783 - Model - INFO - Best mIoU: 0.526403
 2021-03-23 12:47:10,783 - Model - INFO - **** Epoch 33 (36/128) ****
 2021-03-23 12:47:10,783 - Model - INFO - Learning rate:0.000343
+2025-03-18 23:00:12,449 - Model - INFO - PARAMETER ...
+2025-03-18 23:00:12,449 - Model - INFO - Namespace(batch_size=16, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet2_sem_seg', lr_decay=0.7, model='pointnet2_sem_seg', npoint=4096, optimizer='Adam', step_size=10, test_area=5)
+2025-03-18 23:02:11,747 - Model - INFO - PARAMETER ...
+2025-03-18 23:02:11,747 - Model - INFO - Namespace(batch_size=16, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet2_sem_seg', lr_decay=0.7, model='pointnet2_sem_seg', npoint=4096, optimizer='Adam', step_size=10, test_area=5)
+2025-03-18 23:02:13,593 - Model - INFO - The number of training data is: 597
+2025-03-18 23:02:13,593 - Model - INFO - The number of test data is: 199
+2025-03-18 23:02:13,637 - Model - INFO - No existing model, starting training from scratch...
+2025-03-18 23:02:13,957 - Model - INFO - **** Epoch 1 (1/32) ****
+2025-03-18 23:02:13,957 - Model - INFO - Learning rate:0.001000
+2025-03-18 23:02:25,981 - Model - INFO - Training mean loss: 1.185777
+2025-03-18 23:02:25,981 - Model - INFO - Training accuracy: 0.622179
+2025-03-18 23:02:25,981 - Model - INFO - Save model...
+2025-03-18 23:02:25,981 - Model - INFO - Saving at log/sem_seg/pointnet2_sem_seg/checkpoints/model_2025-03-18_23-02.pth
+2025-03-18 23:02:25,996 - Model - INFO - Saving model....
+2025-03-18 23:02:25,998 - Model - INFO - ---- EPOCH 001 EVALUATION ----

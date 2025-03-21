@@ -21,7 +21,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
 
-classes = ['Void', 'Ground', 'Stem', 'Canopy', 'Roots', 'Objects']
+classes = ['Ground', 'Stem', 'Canopy', 'Roots', 'Objects']
 class2label = {cls: i for i, cls in enumerate(classes)}
 seg_classes = class2label
 seg_label_to_cat = {}
@@ -37,7 +37,7 @@ def parse_args():
     parser = argparse.ArgumentParser('Model')
     parser.add_argument('--model', type=str, default='pointnet_sem_seg', help='model name [default: pointnet_sem_seg]')
     parser.add_argument('--batch_size', type=int, default=16, help='Batch Size during training [default: 16]')
-    parser.add_argument('--epoch', default=32, type=int, help='Epoch to run [default: 32]')
+    parser.add_argument('--epoch', default=24, type=int, help='Epoch to run [default: 32]')
     parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
     parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
     parser.add_argument('--optimizer', type=str, default='Adam', help='Adam or SGD [default: Adam]')
@@ -87,25 +87,25 @@ def main(args):
     log_string(args)
 
     root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024'
-    NUM_CLASSES = 6
+    NUM_CLASSES = 5
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
     BLOCK_SIZE = 40.0
 
     print("start loading training data ...")
     TRAIN_DATASET = PaMa3DDataset(split='train', data_root=root, num_point=NUM_POINT, block_size=BLOCK_SIZE, sample_rate=1.0, num_class=NUM_CLASSES, transform=None)
-    print("start loading test data ...")
-    TEST_DATASET = PaMa3DDataset(split='test', data_root=root, num_point=NUM_POINT, block_size=BLOCK_SIZE, sample_rate=1.0, num_class=NUM_CLASSES, transform=None)
+    print("start loading validation data ...")
+    VAL_DATASET = PaMa3DDataset(split='val', data_root=root, num_point=NUM_POINT, block_size=BLOCK_SIZE, sample_rate=1.0, num_class=NUM_CLASSES, transform=None)
 
     trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=10,
                                                   pin_memory=True, drop_last=True,
                                                   worker_init_fn=lambda x: np.random.seed(x + int(time.time())))
-    testDataLoader = torch.utils.data.DataLoader(TEST_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=10,
+    valDataLoader = torch.utils.data.DataLoader(VAL_DATASET, batch_size=BATCH_SIZE, shuffle=False, num_workers=10,
                                                  pin_memory=True, drop_last=True)
     weights = torch.Tensor(TRAIN_DATASET.labelweights).cuda()
 
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
-    log_string("The number of test data is: %d" % len(TEST_DATASET))
+    log_string("The number of validation data is: %d" % len(VAL_DATASET))
 
     '''MODEL LOADING'''
     MODEL = importlib.import_module(args.model)
@@ -128,7 +128,7 @@ def main(args):
     try:
         model_path = str(experiment_dir) + '/checkpoints/best_model.pth'
         print(f"Use pretrain model {model_path}")
-        checkpoint = torch.load(model_path)
+        checkpoint = torch.load(model_path, weights_only=True)
         start_epoch = checkpoint['epoch']
         classifier.load_state_dict(checkpoint['model_state_dict'])
         log_string(f'Use pretrain model {model_path}')
@@ -218,7 +218,7 @@ def main(args):
 
         '''Evaluate on chopped scenes'''
         with torch.no_grad():
-            num_batches = len(testDataLoader)
+            num_batches = len(valDataLoader)
             total_correct = 0
             total_seen = 0
             loss_sum = 0
@@ -229,7 +229,7 @@ def main(args):
             classifier = classifier.eval()
 
             log_string('---- EPOCH %03d EVALUATION ----' % (global_epoch + 1))
-            for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
+            for i, (points, target) in tqdm(enumerate(valDataLoader), total=len(valDataLoader), smoothing=0.9):
                 points = points.data.numpy()
                 points = torch.Tensor(points)
                 points, target = points.float().cuda(), target.long().cuda()
@@ -266,7 +266,7 @@ def main(args):
             iou_per_class_str = '------- IoU --------\n'
             for l in range(NUM_CLASSES):
                 iou_per_class_str += 'class %s weight: %.3f, IoU: %.3f \n' % (
-                    seg_label_to_cat[l] + ' ' * (14 - len(seg_label_to_cat[l])), labelweights[l - 1],
+                    seg_label_to_cat[l] + ' ' * (NUM_CLASSES+1 - len(seg_label_to_cat[l])), labelweights[l - 1],
                     total_correct_class[l] / float(total_iou_deno_class[l]))
 
             log_string(iou_per_class_str)

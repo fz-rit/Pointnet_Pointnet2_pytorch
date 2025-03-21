@@ -22,7 +22,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
 
-classes = ['Ground', 'Stem', 'Canopy', 'Roots', 'Objects']
+classes = ['Void', 'Ground', 'Stem', 'Canopy', 'Roots', 'Objects']
 class2label = {cls: i for i, cls in enumerate(classes)}
 seg_classes = class2label
 seg_label_to_cat = {}
@@ -59,7 +59,7 @@ def main(args):
 
     '''HYPER PARAMETER'''
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
-    experiment_dir = args.log_dir
+    experiment_dir = 'log/sem_seg/' + args.log_dir
     visual_dir = experiment_dir + '/visual/'
     visual_dir = Path(visual_dir)
     visual_dir.mkdir(exist_ok=True)
@@ -76,7 +76,7 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    NUM_CLASSES = 5
+    NUM_CLASSES = 6
     BATCH_SIZE = args.batch_size
     BLOCK_POINTS = args.block_points
 
@@ -87,13 +87,12 @@ def main(args):
     log_string("The number of test data is: %d" % len(TEST_DATASET))
 
     '''MODEL LOADING'''
-    MODEL = importlib.import_module('pointnet_sem_seg')
-    segmodel = MODEL.get_model(NUM_CLASSES).cuda()
-    model_path = Path(experiment_dir) / 'checkpoints' / 'model_2025-03-20_16-29.pth'
-    assert model_path.exists() and model_path.is_file(), f"Model checkpoint not found at {model_path}"
-    checkpoint = torch.load(model_path, weights_only=False)
-    segmodel.load_state_dict(checkpoint['model_state_dict'])
-    segmodel = segmodel.eval()
+    model_name = os.listdir(experiment_dir + '/logs')[0].split('.')[0]
+    MODEL = importlib.import_module(model_name)
+    classifier = MODEL.get_model(NUM_CLASSES).cuda()
+    checkpoint = torch.load(str(experiment_dir) + '/checkpoints/model_2025-03-20_13-23.pth', weights_only=True)
+    classifier.load_state_dict(checkpoint['model_state_dict'])
+    classifier = classifier.eval()
 
     with torch.no_grad():
         scene_id = TEST_DATASET.scans_split
@@ -121,6 +120,7 @@ def main(args):
                 num_blocks = scene_data.shape[0]
                 s_batch_num = (num_blocks + BATCH_SIZE - 1) // BATCH_SIZE
                 batch_data = np.zeros((BATCH_SIZE, BLOCK_POINTS, 9))
+
                 batch_label = np.zeros((BATCH_SIZE, BLOCK_POINTS))
                 batch_point_index = np.zeros((BATCH_SIZE, BLOCK_POINTS))
                 batch_smpw = np.zeros((BATCH_SIZE, BLOCK_POINTS))
@@ -138,7 +138,7 @@ def main(args):
                     torch_data = torch.Tensor(batch_data)
                     torch_data = torch_data.float().cuda()
                     torch_data = torch_data.transpose(2, 1)
-                    seg_pred, _ = segmodel(torch_data)
+                    seg_pred, _ = classifier(torch_data)
                     batch_pred_label = seg_pred.contiguous().cpu().data.max(2)[1].numpy()
 
                     vote_label_pool = add_vote(vote_label_pool, batch_point_index[0:real_batch_size, ...],
@@ -178,7 +178,7 @@ def main(args):
                 #                     "255,165,0": 4,
                 #                     "255,255,0": 5
                 #                 }
-                color_map = np.array([[128, 0, 128], [165, 42, 42], [0, 128, 0], [255, 165, 0], [255, 255, 0]])
+                color_map = np.array([[0, 0, 0], [128, 0, 128], [165, 42, 42], [0, 128, 0], [255, 165, 0], [255, 255, 0]])
                 pred_colors = color_map[pred_label]
 
                 pred_data = pd.DataFrame({
@@ -188,7 +188,7 @@ def main(args):
                     "r": pred_colors[:, 0],
                     "g": pred_colors[:, 1],
                     "b": pred_colors[:, 2],
-                    "label": pred_label+1
+                    "label": pred_label
                 })
 
                 pred_data.to_csv(pred_csv_path, index=False)
@@ -198,7 +198,7 @@ def main(args):
         iou_per_class_str = '------- IoU --------\n'
         for l in range(NUM_CLASSES):
             iou_per_class_str += 'class %s, IoU: %.3f \n' % (
-                seg_label_to_cat[l] + ' ' * (NUM_CLASSES+1 - len(seg_label_to_cat[l])),
+                seg_label_to_cat[l] + ' ' * (14 - len(seg_label_to_cat[l])),
                 total_correct_class[l] / float(total_iou_deno_class[l]))
         log_string(iou_per_class_str)
         log_string('eval point avg class IoU: %f' % np.mean(IoU))

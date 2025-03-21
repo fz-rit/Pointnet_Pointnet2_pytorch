@@ -5,10 +5,21 @@ from tqdm import tqdm
 from torch.utils.data import Dataset
 from pathlib import Path
 import pandas as pd
+
+def clean_input(input_df: pd.DataFrame):
+    """
+    Cleans the input dataframe by removing rows with class_id 0, then replace 1-5 with 0-4.
+    """
+    input_df = input_df[input_df['class_id'] != 0]
+    if input_df['class_id'].min() == 1:
+        input_df.loc[:, 'class_id'] = input_df.loc[:, 'class_id'].to_numpy() - 1
+    
+    return input_df
+
 class PaMa3DDataset(Dataset):
     def __init__(self, split='train', 
                  data_root='/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024', 
-                 num_point=4096, block_size=40.0, sample_rate=1.0, num_class=6, transform=None):
+                 num_point=4096, block_size=40.0, sample_rate=1.0, num_class=5, transform=None):
         super().__init__()
         self.num_point = num_point
         self.block_size = block_size
@@ -30,6 +41,8 @@ class PaMa3DDataset(Dataset):
 
         for scan_path in tqdm(self.scans_split, total=len(self.scans_split)):
             scan_data = pd.read_csv(scan_path, sep=',')  # pandas dataframe with 19 columns.
+            # filter out points with class_id 0
+            scan_data = clean_input(scan_data)
             points = scan_data.loc[:, ['X', 'Y', 'Z', 'r', 'g', 'b']].to_numpy() # xyzrgb, N*6
             labels = scan_data.loc[:, 'class_id'].to_numpy()  # N
             tmp, _ = np.histogram(labels, range(self.num_class+1))
@@ -91,7 +104,7 @@ class PaMa3DDataset(Dataset):
 
 class Pama3dTestDataset():
     # prepare to give prediction on each points
-    def __init__(self, data_root, block_points=4096, split='test', stride=1, num_class=6, block_size=1.0, padding=0.001):
+    def __init__(self, data_root, block_points=4096, split='test', stride=1, num_class=5, block_size=1.0, padding=0.001):
         self.block_points = block_points
         self.block_size = block_size
         self.padding = padding
@@ -99,11 +112,13 @@ class Pama3dTestDataset():
         self.split = split
         self.stride = stride * block_size # controls how much the window (block) shifts; <1 - overlap; =1 - adjacent; >1 - gap
         self.scene_points_num = []
-        assert split in ['train', 'test']
+        assert split in ['train', 'val', 'test']
         
         file_format = 'csv'
         if split == 'train':
             self.split_dir = Path(data_root) / 'train' / file_format
+        elif split == 'val':
+            self.split_dir = Path(data_root) / 'val' / file_format
         else:
             self.split_dir = Path(data_root) / 'test' / file_format
         
@@ -115,6 +130,7 @@ class Pama3dTestDataset():
         self.scan_coord_min, self.scan_coord_max = [], []
         for scan_path in self.scans_split:
             data_df = pd.read_csv(scan_path, sep=',')
+            data_df = clean_input(data_df)
             points = data_df.loc[:, ['X', 'Y', 'Z']].to_numpy()
             self.scene_points_list.append(data_df.loc[:, ['X', 'Y', 'Z', 'r', 'g', 'b']].to_numpy())
             self.semantic_labels_list.append(data_df.loc[:, 'class_id'].to_numpy())
@@ -185,7 +201,7 @@ class Pama3dTestDataset():
 
 if __name__ == '__main__':
     data_root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024'
-    num_point, block_size, num_class = 4096, 40, 6
+    num_point, block_size, num_class = 4096, 40, 5
     sample_rate = 0.1
     print(f"Sample rate: {sample_rate}")
     point_data = PaMa3DDataset(split='train', data_root=data_root, 

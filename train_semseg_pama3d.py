@@ -1,7 +1,4 @@
-"""
-Author: Benny
-Date: Nov 2019
-"""
+
 import argparse
 import os
 from data_utils.PaMa3DDataLoader import PaMa3DDataset
@@ -35,8 +32,8 @@ def inplace_relu(m):
 
 def parse_args():
     parser = argparse.ArgumentParser('Model')
-    parser.add_argument('--model', type=str, default='pointnet_sem_seg', help='model name [default: pointnet_sem_seg]')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batch Size during training [default: 16]')
+    parser.add_argument('--model', type=str, default='pointnet2_sem_seg', help='model name [default: pointnet_sem_seg]')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 16]')
     parser.add_argument('--epoch', default=24, type=int, help='Epoch to run [default: 32]')
     parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
     parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
@@ -60,26 +57,26 @@ def main(args):
 
     '''CREATE DIR'''
     timestr = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
-    experiment_dir = Path('./log/')
-    experiment_dir.mkdir(exist_ok=True)
-    experiment_dir = experiment_dir.joinpath('sem_seg')
-    experiment_dir.mkdir(exist_ok=True)
+    # experiment_dir = Path('./log/')
+    # experiment_dir.mkdir(exist_ok=True)
+    # experiment_dir = experiment_dir.joinpath('sem_seg')
+    # experiment_dir.mkdir(exist_ok=True)
     if args.log_dir is None:
-        experiment_dir = experiment_dir.joinpath(timestr)
+        experiment_dir = Path('./log/sem_seg/') / timestr
     else:
-        experiment_dir = experiment_dir.joinpath(args.log_dir)
-    experiment_dir.mkdir(exist_ok=True)
-    checkpoints_dir = experiment_dir.joinpath('checkpoints/')
+        experiment_dir = Path(args.log_dir)
+    # experiment_dir.mkdir(exist_ok=True)
+    checkpoints_dir = experiment_dir / 'checkpoints'
     checkpoints_dir.mkdir(exist_ok=True)
-    log_dir = experiment_dir.joinpath('logs/')
-    log_dir.mkdir(exist_ok=True)
+    train_log_dir = experiment_dir / 'logs'
+    train_log_dir.mkdir(exist_ok=True)
 
     '''LOG'''
     args = parse_args()
     logger = logging.getLogger("Model")
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler = logging.FileHandler('%s/%s.txt' % (log_dir, args.model))
+    file_handler = logging.FileHandler('%s/%s.txt' % (train_log_dir, args.model))
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
@@ -90,7 +87,7 @@ def main(args):
     NUM_CLASSES = 5
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
-    BLOCK_SIZE = 40.0
+    BLOCK_SIZE = 40.0 # in meters.
 
     print("start loading training data ...")
     TRAIN_DATASET = PaMa3DDataset(split='train', data_root=root, num_point=NUM_POINT, block_size=BLOCK_SIZE, sample_rate=1.0, num_class=NUM_CLASSES, transform=None)
@@ -109,8 +106,10 @@ def main(args):
 
     '''MODEL LOADING'''
     MODEL = importlib.import_module(args.model)
-    shutil.copy('models/%s.py' % args.model, str(experiment_dir))
-    shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
+    # shutil.copy('models/%s.py' % args.model, str(experiment_dir))
+    # shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
+    shutil.copy('models/%s.py' % args.model, experiment_dir)
+    shutil.copy('models/pointnet2_utils.py', experiment_dir)
 
     classifier = MODEL.get_model(NUM_CLASSES).cuda()
     criterion = MODEL.get_loss().cuda()
@@ -126,16 +125,18 @@ def main(args):
             torch.nn.init.constant_(m.bias.data, 0.0)
 
     try:
-        model_path = str(experiment_dir) + '/checkpoints/best_model.pth'
-        print(f"Use pretrain model {model_path}")
-        checkpoint = torch.load(model_path, weights_only=True)
+        # model_path = str(experiment_dir) + '/checkpoints/best_model.pth'
+        model_path = Path('log/sem_seg/pointnet2_sem_seg/checkpoints/best_model.pth')
+        print(f"Try Use pretrain model {model_path}")
+        checkpoint = torch.load(model_path, weights_only=False)
         start_epoch = checkpoint['epoch']
         classifier.load_state_dict(checkpoint['model_state_dict'])
         log_string(f'Use pretrain model {model_path}')
     except:
-        log_string('No existing model, starting training from scratch...')
+        log_string('No proper existing model, starting training from scratch...')
         start_epoch = 0
         classifier = classifier.apply(weights_init)
+        # raise FileNotFoundError(f"No existing model found at {model_path}")
 
     if args.optimizer == 'Adam':
         optimizer = torch.optim.Adam(
@@ -206,7 +207,7 @@ def main(args):
 
         if epoch % 5 == 0:
             logger.info('Save model...')
-            savepath = str(checkpoints_dir) + f'/model_{timestr}.pth'
+            savepath = checkpoints_dir / f'model_{timestr}.pth'
             log_string('Saving at %s' % savepath)
             state = {
                 'epoch': epoch,

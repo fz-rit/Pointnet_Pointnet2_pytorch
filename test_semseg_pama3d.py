@@ -15,19 +15,15 @@ import provider
 import numpy as np
 import pandas as pd
 import time
-
+from tools import calc_metrics
 start_time = time.time()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
 
-classes = ['Ground', 'Stem', 'Canopy', 'Roots', 'Objects']
-class2label = {cls: i for i, cls in enumerate(classes)}
-seg_classes = class2label
-seg_label_to_cat = {}
-for i, cat in enumerate(seg_classes.keys()):
-    seg_label_to_cat[i] = cat
+
+seg_label_to_cat = {0: 'Ground', 1: 'Stem', 2: 'Canopy', 3: 'Roots', 4: 'Objects'}
 
 
 def parse_args():
@@ -36,7 +32,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=32, help='batch size in testing [default: 32]')
     parser.add_argument('--gpu', type=str, default='0', help='specify gpu device')
     parser.add_argument('--block_points', type=int, default=4096, help='point number [default: 4096]')
-    parser.add_argument('--log_dir', type=str, required=True, help='experiment root')
+    parser.add_argument('--log_dir', type=str, default='log/sem_seg', help='experiment root')
     parser.add_argument('--visual', action='store_true', default=True, help='visualize result [default: True]')
     parser.add_argument('--num_votes', type=int, default=3, help='aggregate segmentation scores with voting [default: 5]')
     return parser.parse_args()
@@ -59,9 +55,9 @@ def main(args):
 
     '''HYPER PARAMETER'''
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
-    experiment_dir = args.log_dir
-    visual_dir = experiment_dir + '/visual/'
-    visual_dir = Path(visual_dir)
+    # experiment_dir = Path(args.log_dir)
+    experiment_dir = Path('log/sem_seg/2025-03-27_19-37')
+    visual_dir = experiment_dir  / 'visual'
     visual_dir.mkdir(exist_ok=True)
 
     '''LOG'''
@@ -69,7 +65,7 @@ def main(args):
     logger = logging.getLogger("Model")
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler = logging.FileHandler('%s/eval.txt' % experiment_dir)
+    file_handler = logging.FileHandler(experiment_dir / 'eval.txt')
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
@@ -87,125 +83,94 @@ def main(args):
     log_string("The number of test data is: %d" % len(TEST_DATASET))
 
     '''MODEL LOADING'''
-    MODEL = importlib.import_module('pointnet_sem_seg')
+    MODEL = importlib.import_module('pointnet2_sem_seg')
     segmodel = MODEL.get_model(NUM_CLASSES).cuda()
-    model_path = Path(experiment_dir) / 'checkpoints' / 'model_2025-03-20_16-29.pth'
+    # model_path = experiment_dir / 'checkpoints' / 'model_2025-03-20_16-29.pth'
+    model_path = Path('log/sem_seg/pointnet2_sem_seg/checkpoints/model_2025-03-27_19-37.pth')
     assert model_path.exists() and model_path.is_file(), f"Model checkpoint not found at {model_path}"
     checkpoint = torch.load(model_path, weights_only=False)
     segmodel.load_state_dict(checkpoint['model_state_dict'])
     segmodel = segmodel.eval()
 
     with torch.no_grad():
-        scene_id = TEST_DATASET.scans_split
-        scene_id = [x.stem for x in scene_id]
-        num_batches = len(TEST_DATASET)
+        test_img_idx = 0
+        file_path = TEST_DATASET.scans_split[test_img_idx]
+        file_stem = Path(file_path).stem
+        print(f"Inference the file {file_stem}")
+        
 
-        total_seen_class = [0 for _ in range(NUM_CLASSES)]
-        total_correct_class = [0 for _ in range(NUM_CLASSES)]
-        total_iou_deno_class = [0 for _ in range(NUM_CLASSES)]
+        whole_scene_data = TEST_DATASET.scene_points_list[test_img_idx]
+        whole_scene_label = TEST_DATASET.semantic_labels_list[test_img_idx]
+        vote_label_pool = np.zeros((whole_scene_label.shape[0], NUM_CLASSES))
+        for _ in tqdm(range(args.num_votes), total=args.num_votes, desc="Votes", leave=False):
+        
+            scene_data, scene_label, scene_smpw, scene_point_index = TEST_DATASET[test_img_idx]
+            num_blocks = scene_data.shape[0]
+            s_batch_num = (num_blocks + BATCH_SIZE - 1) // BATCH_SIZE
+            batch_data = np.zeros((BATCH_SIZE, BLOCK_POINTS, 9))
+            batch_label = np.zeros((BATCH_SIZE, BLOCK_POINTS))
+            batch_point_index = np.zeros((BATCH_SIZE, BLOCK_POINTS))
+            batch_smpw = np.zeros((BATCH_SIZE, BLOCK_POINTS)) # sample weight
 
+            for sbatch in tqdm(range(s_batch_num), total=s_batch_num, desc="Sub-batches", leave=False):
+                start_idx = sbatch * BATCH_SIZE
+                end_idx = min((sbatch + 1) * BATCH_SIZE, num_blocks)
+                real_batch_size = end_idx - start_idx
+                batch_data[0:real_batch_size, ...] = scene_data[start_idx:end_idx, ...]
+                batch_label[0:real_batch_size, ...] = scene_label[start_idx:end_idx, ...]
+                batch_point_index[0:real_batch_size, ...] = scene_point_index[start_idx:end_idx, ...]
+                batch_smpw[0:real_batch_size, ...] = scene_smpw[start_idx:end_idx, ...]
+                batch_data[:, :, 3:6] /= 1.0
 
-        for batch_idx in range(num_batches):
-            print("Inference [%d/%d] %s ..." % (batch_idx + 1, num_batches, scene_id[batch_idx]))
-            total_seen_class_tmp = [0 for _ in range(NUM_CLASSES)]
-            total_correct_class_tmp = [0 for _ in range(NUM_CLASSES)]
-            total_iou_deno_class_tmp = [0 for _ in range(NUM_CLASSES)]
-            
+                torch_data = torch.Tensor(batch_data)
+                torch_data = torch_data.float().cuda()
+                torch_data = torch_data.transpose(2, 1)
+                seg_pred, _ = segmodel(torch_data)
+                batch_pred_label = seg_pred.contiguous().cpu().data.max(2)[1].numpy()
 
-            whole_scene_data = TEST_DATASET.scene_points_list[batch_idx]
-            whole_scene_label = TEST_DATASET.semantic_labels_list[batch_idx]
-            vote_label_pool = np.zeros((whole_scene_label.shape[0], NUM_CLASSES))
-            for _ in tqdm(range(args.num_votes), total=args.num_votes, desc="Votes", leave=False):
-            
-                scene_data, scene_label, scene_smpw, scene_point_index = TEST_DATASET[batch_idx]
-                num_blocks = scene_data.shape[0]
-                s_batch_num = (num_blocks + BATCH_SIZE - 1) // BATCH_SIZE
-                batch_data = np.zeros((BATCH_SIZE, BLOCK_POINTS, 9))
-                batch_label = np.zeros((BATCH_SIZE, BLOCK_POINTS))
-                batch_point_index = np.zeros((BATCH_SIZE, BLOCK_POINTS))
-                batch_smpw = np.zeros((BATCH_SIZE, BLOCK_POINTS))
+                vote_label_pool = add_vote(vote_label_pool, batch_point_index[0:real_batch_size, ...],
+                                            batch_pred_label[0:real_batch_size, ...],
+                                            batch_smpw[0:real_batch_size, ...])
 
-                for sbatch in tqdm(range(s_batch_num), total=s_batch_num, desc="Sub-batches", leave=False):
-                    start_idx = sbatch * BATCH_SIZE
-                    end_idx = min((sbatch + 1) * BATCH_SIZE, num_blocks)
-                    real_batch_size = end_idx - start_idx
-                    batch_data[0:real_batch_size, ...] = scene_data[start_idx:end_idx, ...]
-                    batch_label[0:real_batch_size, ...] = scene_label[start_idx:end_idx, ...]
-                    batch_point_index[0:real_batch_size, ...] = scene_point_index[start_idx:end_idx, ...]
-                    batch_smpw[0:real_batch_size, ...] = scene_smpw[start_idx:end_idx, ...]
-                    batch_data[:, :, 3:6] /= 1.0
+        pred_label = np.argmax(vote_label_pool, 1)
+        # print(pred_label.shape)
+        # print(whole_scene_label.shape)
+        # print(np.unique(pred_label))
+        # print(np.unique(whole_scene_label))
 
-                    torch_data = torch.Tensor(batch_data)
-                    torch_data = torch_data.float().cuda()
-                    torch_data = torch_data.transpose(2, 1)
-                    seg_pred, _ = segmodel(torch_data)
-                    batch_pred_label = seg_pred.contiguous().cpu().data.max(2)[1].numpy()
+        # Calculate metrics
+        conf_mtx, overall_accuracy, mAcc, mIoU, FWIoU, dice_coefficient, IoUs = calc_metrics(whole_scene_label, pred_label, NUM_CLASSES)
 
-                    vote_label_pool = add_vote(vote_label_pool, batch_point_index[0:real_batch_size, ...],
-                                               batch_pred_label[0:real_batch_size, ...],
-                                               batch_smpw[0:real_batch_size, ...])
+        result_str = '------- Evaluation Results --------\n'
+        result_str += 'Confusion Matrix:\n'
+        result_str += f"{conf_mtx}\n" 
+        result_str += 'Overall Accuracy: %.3f\n' % overall_accuracy
+        result_str += 'Mean Class Accuracy: %.3f\n' % mAcc
+        result_str += 'Mean IoU: %.3f\n' % mIoU
+        result_str += 'Frequency Weighted IoU: %.3f\n' % FWIoU
+        result_str += 'Dice Coefficient: %.3f\n' % dice_coefficient
+        result_str += 'IoU for each class: \n'
+        for i in range(NUM_CLASSES):
+            result_str += f"{seg_label_to_cat[i]}: {IoUs[i]:.3f}\n"
+        log_string(result_str)
+        output_csv = visual_dir  / f"{file_stem}_pred.csv"
+        if args.visual:
+            # Save the prediction label and color to csv file
+            color_map = np.array([[128, 0, 128], [165, 42, 42], [0, 128, 0], [255, 165, 0], [255, 255, 0]])
+            pred_colors = color_map[pred_label]
 
-            pred_label = np.argmax(vote_label_pool, 1)
+            pred_data = pd.DataFrame({
+                "x": whole_scene_data[:, 0],
+                "y": whole_scene_data[:, 1],
+                "z": whole_scene_data[:, 2],
+                "r": pred_colors[:, 0],
+                "g": pred_colors[:, 1],
+                "b": pred_colors[:, 2],
+                "label": pred_label+1
+            })
 
-            for l in range(NUM_CLASSES):
-                total_seen_class_tmp[l] += np.sum((whole_scene_label == l))
-                total_correct_class_tmp[l] += np.sum((pred_label == l) & (whole_scene_label == l))
-                total_iou_deno_class_tmp[l] += np.sum(((pred_label == l) | (whole_scene_label == l)))
-                total_seen_class[l] += total_seen_class_tmp[l]
-                total_correct_class[l] += total_correct_class_tmp[l]
-                total_iou_deno_class[l] += total_iou_deno_class_tmp[l]
-
-            iou_map = np.array(total_correct_class_tmp) / (np.array(total_iou_deno_class_tmp, dtype=float) + 1e-6)
-            print(iou_map)
-            arr = np.array(total_seen_class_tmp)
-            tmp_iou = np.mean(iou_map[arr != 0])
-            log_string('Mean IoU of %s: %.4f' % (scene_id[batch_idx], tmp_iou))
-            print('----------------------------')
-
-            filename = os.path.join(visual_dir, scene_id[batch_idx] + '.txt')
-            with open(filename, 'w') as pl_save:
-                for i in pred_label:
-                    pl_save.write(str(int(i)) + '\n')
-                pl_save.close()
-            if args.visual:
-                # Save the prediction label and color to csv file
-                pred_csv_path = os.path.join(visual_dir, scene_id[batch_idx] + '_pred.csv')
-                # COLOR_TO_CLASS_ID = {
-                #                     "0,0,0": 0,
-                #                     "128,0,128": 1,
-                #                     "165,42,42": 2,
-                #                     "0,128,0": 3,
-                #                     "255,165,0": 4,
-                #                     "255,255,0": 5
-                #                 }
-                color_map = np.array([[128, 0, 128], [165, 42, 42], [0, 128, 0], [255, 165, 0], [255, 255, 0]])
-                pred_colors = color_map[pred_label]
-
-                pred_data = pd.DataFrame({
-                    "x": whole_scene_data[:, 0],
-                    "y": whole_scene_data[:, 1],
-                    "z": whole_scene_data[:, 2],
-                    "r": pred_colors[:, 0],
-                    "g": pred_colors[:, 1],
-                    "b": pred_colors[:, 2],
-                    "label": pred_label+1
-                })
-
-                pred_data.to_csv(pred_csv_path, index=False)
-
-
-        IoU = np.array(total_correct_class) / (np.array(total_iou_deno_class, dtype=float) + 1e-6)
-        iou_per_class_str = '------- IoU --------\n'
-        for l in range(NUM_CLASSES):
-            iou_per_class_str += 'class %s, IoU: %.3f \n' % (
-                seg_label_to_cat[l] + ' ' * (NUM_CLASSES+1 - len(seg_label_to_cat[l])),
-                total_correct_class[l] / float(total_iou_deno_class[l]))
-        log_string(iou_per_class_str)
-        log_string('eval point avg class IoU: %f' % np.mean(IoU))
-        log_string('Mean Accuracy: %f' % (
-            np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=float) + 1e-6))))
-        log_string('Overall Accuracy: %f' % (
-                np.sum(total_correct_class) / float(np.sum(total_seen_class) + 1e-6)))
+            pred_data.to_csv(output_csv, index=False)
+            log_string(f"Save the prediction to {output_csv}")
 
         print("--- Done with %s seconds ---" % (time.time() - start_time))
 

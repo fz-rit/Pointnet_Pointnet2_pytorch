@@ -200,7 +200,7 @@ class Pama3dTestDataset():
         return len(self.scene_points_list)
 
 if __name__ == '__main__':
-    data_root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024'
+    data_root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024_for_rc'
     num_point, block_size, num_class = 4096, 40, 5
     sample_rate = 0.1
     print(f"Sample rate: {sample_rate}")

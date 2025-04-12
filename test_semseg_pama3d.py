@@ -52,7 +52,7 @@ def main(args):
     '''HYPER PARAMETER'''
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     # experiment_dir = Path(args.log_dir)
-    experiment_dir = Path('log/sem_seg/2025-03-27_19-37')
+    experiment_dir = Path('log/sem_seg/2025-04-11_11-41')
     visual_dir = experiment_dir  / 'visual'
     visual_dir.mkdir(exist_ok=True)
 
@@ -72,7 +72,7 @@ def main(args):
     BATCH_SIZE = args.batch_size
     BLOCK_POINTS = args.block_points
 
-    data_root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024'
+    data_root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024_for_rc'
 
     TEST_DATASET = Pama3dTestDataset(split='test', data_root=data_root, block_points=BLOCK_POINTS, 
                                      num_class=NUM_CLASSES)
@@ -82,14 +82,14 @@ def main(args):
     MODEL = importlib.import_module('pointnet2_sem_seg')
     segmodel = MODEL.get_model(NUM_CLASSES).cuda()
     # model_path = experiment_dir / 'checkpoints' / 'model_2025-03-20_16-29.pth'
-    model_path = Path('log/sem_seg/pointnet2_sem_seg/checkpoints/model_2025-03-27_19-37.pth')
+    model_path = Path('./log/sem_seg/2025-04-11_11-41/checkpoints/model_2025-04-11_11-41.pth')
     assert model_path.exists() and model_path.is_file(), f"Model checkpoint not found at {model_path}"
     checkpoint = torch.load(model_path, weights_only=False)
     segmodel.load_state_dict(checkpoint['model_state_dict'])
     segmodel = segmodel.eval()
 
     with torch.no_grad():
-        test_img_idx = 0
+        test_img_idx = 3
         file_path = TEST_DATASET.scans_split[test_img_idx]
         file_stem = Path(file_path).stem
         print(f"Inference the file {file_stem}")

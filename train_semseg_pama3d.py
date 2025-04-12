@@ -32,7 +32,7 @@ def inplace_relu(m):
 
 def parse_args():
     parser = argparse.ArgumentParser('Model')
-    parser.add_argument('--model', type=str, default='pointnet2_sem_seg', help='model name [default: pointnet_sem_seg]')
+    parser.add_argument('--model', type=str, default='pointnet2_sem_seg', help='model name [default: pointnet2_sem_seg]')
     parser.add_argument('--batch_size', type=int, default=32, help='Batch Size during training [default: 16]')
     parser.add_argument('--epoch', default=24, type=int, help='Epoch to run [default: 32]')
     parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
@@ -57,15 +57,12 @@ def main(args):
 
     '''CREATE DIR'''
     timestr = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M'))
-    # experiment_dir = Path('./log/')
-    # experiment_dir.mkdir(exist_ok=True)
-    # experiment_dir = experiment_dir.joinpath('sem_seg')
-    # experiment_dir.mkdir(exist_ok=True)
+
     if args.log_dir is None:
         experiment_dir = Path('./log/sem_seg/') / timestr
     else:
         experiment_dir = Path(args.log_dir)
-    # experiment_dir.mkdir(exist_ok=True)
+    experiment_dir.mkdir(exist_ok=True)
     checkpoints_dir = experiment_dir / 'checkpoints'
     checkpoints_dir.mkdir(exist_ok=True)
     train_log_dir = experiment_dir / 'logs'
@@ -83,7 +80,7 @@ def main(args):
     log_string('PARAMETER ...')
     log_string(args)
 
-    root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024'
+    root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024_for_rc'
     NUM_CLASSES = 5
     NUM_POINT = args.npoint
     BATCH_SIZE = args.batch_size
@@ -126,7 +123,7 @@ def main(args):
 
     try:
         # model_path = str(experiment_dir) + '/checkpoints/best_model.pth'
-        model_path = Path('log/sem_seg/pointnet2_sem_seg/checkpoints/best_model.pth')
+        model_path = Path('log/sem_seg/pointnet2_sem_seg/checkpoints/best_model_xxxxx.pth')
         print(f"Try Use pretrain model {model_path}")
         checkpoint = torch.load(model_path, weights_only=False)
         start_epoch = checkpoint['epoch']

@@ -74,8 +74,6 @@ def extract_metrics_from_log_txt(log_txt_path, out_csv_path):
 
 
 
-
-
 def plot_train_metrics(df):
     # Plot 1: Losses over epochs
     plt.figure(figsize=(10, 6))
@@ -139,22 +137,6 @@ def plot_confusion_matrix(cm, class_names, title):
 
 
 
-def make_a_table_from_eval_log(metrics_summary):
-    """
-    Create a table from the evaluation log metrics summary.
-    Args:
-        metrics_summary (list): List of dictionaries containing metrics for each file.
-
-    """
-
-    # Convert to DataFrame and display
-    metrics_df = pd.DataFrame(metrics_summary)
-    out_csv_path = Path("./results_metrics.csv")
-    metrics_df.to_csv(out_csv_path, index=False)
-    print(f"Saved metrics summary to {out_csv_path}")
-
-
-
 def plot_eval_metrics(eval_log_path, out_csv_path):
 
     with open(eval_log_path, "r") as file:
@@ -206,6 +188,7 @@ def plot_eval_metrics(eval_log_path, out_csv_path):
     # Save metrics summary to CSV
     eval_df = pd.DataFrame(metrics_summary)
     eval_df.to_csv(out_csv_path, index=False)
+    print(f"Saved evaluation metrics to {out_csv_path}")
 
 
 

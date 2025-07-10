@@ -11,20 +11,21 @@ model:
 # Training Parameters
 training:
   batch_size: 16  # Smaller batch size
+  learning_rate: 0.01
+  min_learning_rate: 0.0001
   epochs: 3      # Few epochs for quick testing
   learning_rate: 0.002  # Slightly higher LR
   optimizer: "Adam"
   decay_rate: 1e-4
   step_size: 5    # More frequent LR decay
-  lr_decay: 0.8
   sample_rate: 0.5  # Use only 50% of data
 
 # Data Configuration
 data:
-  root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024/temp"
+  root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024"
   val_ratio: 0.2  # Smaller validation set
   random_seed: 42
-  feat_group: "xyz"
+  feat_group: "xyz_irz" # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3
   num_workers: 4  # Fewer workers
 
 # Testing Parameters
@@ -34,8 +35,9 @@ testing:
   num_votes: 1  # Single vote for speed
   test_idx: 0
   visual: true
-  model_path: "./log/sem_seg/quick_test/checkpoints/best_model.pth"
-  output_dir: "/tmp/quick_results"
+  # model_path and output_dir are auto-generated based on training settings
+  # model_path: auto-generated as {log_dir}/checkpoints/best_model_{feat_group}.pth
+  # output_dir: auto-generated as {data.root_dir}/test_results
 
 # Hardware Configuration
 hardware:

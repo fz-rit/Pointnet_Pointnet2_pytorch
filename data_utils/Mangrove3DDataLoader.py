@@ -7,6 +7,7 @@ from pathlib import Path
 from tqdm import tqdm
 from torch.utils.data import Dataset
 from typing import List, Tuple, Optional
+import yaml
 
 
 def convert_labels(labels: np.ndarray) -> np.ndarray:
@@ -306,56 +307,52 @@ class Mangrove3DTestDataset(BaseMangrove3DDataset):
         return len(self.scene_points_list)
 
 def main():
-    """Example usage and testing."""
-    data_root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024'
+    """Simplified example for dataset verification."""
+    # Load configuration from YAML file
+    try:
+        import yaml
+    except ImportError:
+        print("PyYAML not found. Please install it: pip install pyyaml")
+        return
+
+    config_path = Path(__file__).parent.parent / 'params/quick_config.yaml'
+    if not config_path.exists():
+        print(f"Configuration file not found at: {config_path}")
+        return
+        
+    with open(config_path, 'r') as f:
+        config_data = yaml.safe_load(f)
+
+    # Extract parameters from config
+    data_root = config_data['data']['root_dir']
     config = {
-        'num_point': 4096, 
-        'block_size': 40, 
-        'num_class': 5, 
-        'sample_rate': 0.1, 
-        'feat_group': "xyzi0",
-        'val_ratio': 0.25,  # 25% for validation
-        'random_seed': 42   # For reproducible splits
+        'num_point': config_data['model']['npoint'],
+        'block_size': config_data['model']['block_size'],
+        'num_class': config_data['model']['num_classes'],
+        'sample_rate': config_data['training']['sample_rate'],
+        'feat_group': config_data['data']['feat_group'],
+        'val_ratio': config_data['data']['val_ratio'],
+        'random_seed': config_data['data']['random_seed']
     }
     
-    print(f"Sample rate: {config['sample_rate']}")
-    print(f"Validation ratio: {config['val_ratio']}")
+    print("Configuration loaded. Initializing datasets...")
     
-    # Test both train and validation datasets
+    # Initialize train and validation datasets
     train_dataset = Mangrove3DDataset(split='train', data_root=data_root, **config)
     val_dataset = Mangrove3DDataset(split='val', data_root=data_root, **config)
     
     print(f'Training dataset size: {len(train_dataset)}')
     print(f'Validation dataset size: {len(val_dataset)}')
-    
-    # Test data loading
-    train_data, train_labels = train_dataset[0]
-    val_data, val_labels = val_dataset[0]
-    print(f'Train sample shape: {train_data.shape}, {train_labels.shape}')
-    print(f'Val sample shape: {val_data.shape}, {val_labels.shape}')
-    
-    # Test DataLoader performance with training dataset
-    manual_seed = 123
-    random.seed(manual_seed)
-    np.random.seed(manual_seed)
-    torch.manual_seed(manual_seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(manual_seed)
-    
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=16, shuffle=True, num_workers=8, pin_memory=True,
-        worker_init_fn=lambda w: random.seed(manual_seed + w)
-    )
-    
-    print("\nTesting DataLoader performance...")
-    for epoch in range(2):
-        start_time = time.time()
-        for i, (data, labels) in enumerate(train_loader):
-            if i >= 3:
-                break
-            print(f'Epoch {epoch+1}, Batch {i+1}: {time.time() - start_time:.3f}s')
-            start_time = time.time()
+
+    # Verify that a sample can be loaded from each
+    if len(train_dataset) > 0:
+        train_data, _ = train_dataset[0]
+        print(f'Successfully loaded a training sample with shape: {train_data.shape}')
+
+    if len(val_dataset) > 0:
+        val_data, _ = val_dataset[0]
+        print(f'Successfully loaded a validation sample with shape: {val_data.shape}')
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,7 +1,6 @@
 
 import argparse
 import datetime
-import importlib
 import logging
 import numpy as np
 import os
@@ -15,50 +14,30 @@ from tools import save_and_plot_loss_accuracy
 import provider
 from data_utils.Mangrove3DDataLoader import Mangrove3DDataset
 from params.config_loader import load_config, create_train_parser
-
-# Configuration
-sys.path.append(os.path.join(os.path.dirname(__file__), 'models'))
+from config_utils import parse_train_args
+from common_utils import (
+    setup_environment, create_model, apply_model_optimizations, 
+    load_checkpoint, save_checkpoint, setup_basic_logging,
+    create_optimizer, log_experiment_info
+)
+import math
 
 
 def parse_args():
     """Parse command line arguments using YAML configuration."""
-    # Load default configuration
-    config = load_config()
-    
-    # Create parser with config defaults
-    parser = create_train_parser(config)
-    args = parser.parse_args()
-    
-    # Update config with command line arguments
-    if args.config:
-        config = load_config(args.config)
-        config.update_from_args(args)
-    else:
-        config.update_from_args(args)
-    
-    # Add config object to args for easy access
-    args.config = config
-    
-    return args, config
+    return parse_train_args()
 
 
 def setup_logging(log_dir: Path, model_name: str):
     """Setup logging configuration."""
-    logger = logging.getLogger("Model")
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler = logging.FileHandler(log_dir / f'{model_name}.txt')
-    file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    return logger
+    return setup_basic_logging(log_dir / f'{model_name}.txt', "Model")
 
 
-def setup_directories(args):
+def setup_directories(args, config):
     """Setup experiment directories."""
-    # timestr = datetime.datetime.now().strftime('%Y-%m-%d')
-
-    exp_dir = Path(args.log_dir) if args.log_dir else Path('./log/sem_seg/') / args.feat_group
+    from common_utils import get_experiment_dir
+    
+    exp_dir = get_experiment_dir(config)
     exp_dir.mkdir(exist_ok=True)
     
     dirs = {
@@ -110,65 +89,23 @@ def create_data_loaders(args, config):
 
 def setup_model_and_optimizer(args, config):
     """Setup model, criterion, and optimizer."""
-    MODEL = importlib.import_module(config.get('model.name'))
-    num_classes = config.get('model.num_classes')
+    classifier, criterion = create_model(config, for_training=True)
     
-    # Determine input channels based on feature group
-    feat_group = config.get('data.feat_group', 'xyz')
-    feature_map = {
-        "xyz": 3,
-        "xyzi0": 4,
-        "xyz_irz": 6,
-        "xyz_p3": 6,
-        "xyz_cap": 6,
-        "xyz_n3": 6
-    }
-    input_channels = feature_map.get(feat_group, 3)
-    
-    classifier = MODEL.get_model(num_classes, input_channels=input_channels).cuda()
-    criterion = MODEL.get_loss().cuda()
-    
-    # Apply inplace ReLU
-    def inplace_relu(m):
-        if 'ReLU' in m.__class__.__name__:
-            m.inplace = True
-    classifier.apply(inplace_relu)
-    
-    # Weight initialization
-    def weights_init(m):
-        classname = m.__class__.__name__
-        if 'Conv2d' in classname or 'Linear' in classname:
-            torch.nn.init.xavier_normal_(m.weight.data)
-            torch.nn.init.constant_(m.bias.data, 0.0)
+    # Apply optimizations
+    apply_model_optimizations(classifier)
     
     # Try loading pretrained model
     start_epoch = 0
     try:
         model_path = Path('log/sem_seg/pointnet2_sem_seg/checkpoints/best_model_xxxxx.pth')
         print(f"Trying to load pretrained model: {model_path}")
-        checkpoint = torch.load(model_path, weights_only=False)
-        start_epoch = checkpoint['epoch']
-        classifier.load_state_dict(checkpoint['model_state_dict'])
-        print(f'Loaded pretrained model: {model_path}')
+        start_epoch = load_checkpoint(classifier, model_path, for_training=True)
     except:
         print('No pretrained model found, starting from scratch...')
-        classifier.apply(weights_init)
+        # Weight initialization is handled in load_checkpoint when it fails
     
     # Setup optimizer
-    optimizer_name = config.get('training.optimizer')
-    learning_rate = config.get('training.learning_rate')
-    decay_rate = config.get('training.decay_rate')
-    
-    if optimizer_name == 'Adam':
-        optimizer = torch.optim.Adam(
-            classifier.parameters(),
-            lr=learning_rate,
-            betas=(0.9, 0.999),
-            eps=1e-08,
-            weight_decay=decay_rate
-        )
-    else:
-        optimizer = torch.optim.SGD(classifier.parameters(), lr=learning_rate, momentum=0.9)
+    optimizer = create_optimizer(classifier, config)
     
     return classifier, criterion, optimizer, start_epoch
 
@@ -271,13 +208,27 @@ def validate_epoch(classifier, criterion, val_loader, weights, args, config, log
     return val_loss, val_acc, mIoU
 
 
-def update_learning_rate(optimizer, epoch, config):
-    """Update learning rate with decay."""
-    learning_rate = config.get('training.learning_rate')
-    lr_decay = config.get('training.lr_decay')
-    step_size = config.get('training.step_size')
+# def update_learning_rate(optimizer, epoch, config):
+#     """Update learning rate with decay."""
+#     learning_rate = config.get('training.learning_rate')
+#     lr_decay = config.get('training.lr_decay')
+#     step_size = config.get('training.step_size')
     
-    lr = max(learning_rate * (lr_decay ** (epoch // step_size)), 1e-5)
+#     lr = max(learning_rate * (lr_decay ** (epoch // step_size)), 1e-5)
+#     for param_group in optimizer.param_groups:
+#         param_group['lr'] = lr
+#     return lr
+
+
+def update_learning_rate(optimizer, epoch, config):
+    """Update learning rate with cosine annealing."""
+    initial_lr = config.get('training.learning_rate')  # η_max
+    min_lr = config.get('training.min_learning_rate', 1e-5)  # η_min
+    total_epochs = config.get('training.epochs', 100)  # T_max
+    
+    # Cosine annealing formula
+    lr = min_lr + 0.5 * (initial_lr - min_lr) * (1 + math.cos(math.pi * epoch / total_epochs))
+    
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     return lr
@@ -296,34 +247,36 @@ def update_bn_momentum(classifier, epoch, config):
     return momentum
 
 
-def save_checkpoint(classifier, optimizer, epoch, mIoU, save_path, logger):
-    """Save model checkpoint."""
-    state = {
-        'epoch': epoch,
-        'class_avg_iou': mIoU,
-        'model_state_dict': classifier.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-    }
-    torch.save(state, save_path)
-    logger.info(f'Model saved to {save_path}')
+
+def save_checkpoint_wrapper(classifier, optimizer, epoch, mIoU, save_path, logger):
+    """Save model checkpoint using common utility."""
+    metrics = {'class_avg_iou': mIoU}
+    save_checkpoint(classifier, optimizer, epoch, metrics, save_path, logger)
 
 
 def main(args, config):
     """Main training function."""
     # Setup environment
-    os.environ["CUDA_VISIBLE_DEVICES"] = config.get('hardware.gpu')
+    setup_environment(config.get('hardware.gpu'))
     
     # Setup directories and logging
-    dirs = setup_directories(args)
+    dirs = setup_directories(args, config)
     logger = setup_logging(dirs['logs'], config.get('model.name'))
-    feature_group = config.get('data.feat_group', 'xyz')
+    
+    # Log experiment info
+    log_experiment_info(args, config, logger)
+    
+    # Log training setup
+    logger.info("=" * 60)
+    logger.info("TRAINING SETUP")
+    logger.info("=" * 60)
+    logger.info(f"Experiment directory: {dirs['experiment']}")
+    logger.info(f"Checkpoints will be saved to: {dirs['checkpoints']}")
+    logger.info("=" * 60)
     
     def log_string(s):
         logger.info(s)
         print(s)
-    
-    log_string('PARAMETERS:')
-    log_string(str(args))
     
     # Copy model files
     model_name = config.get('model.name')
@@ -345,6 +298,7 @@ def main(args, config):
     best_iou = 0
     train_losses, val_losses = [], []
     train_accs, val_accs = [], []
+    feature_group = config.get('data.feat_group', 'xyz')
     
     num_epochs = config.get('training.epochs')
     for epoch in range(start_epoch, num_epochs):
@@ -369,13 +323,13 @@ def main(args, config):
         save_interval = config.get('logging.save_interval')
         if epoch % save_interval == 0:
             save_path = dirs['checkpoints'] / f'model_{feature_group}_epoch_{epoch}.pth'
-            save_checkpoint(classifier, optimizer, epoch, mIoU, save_path, logger)
+            save_checkpoint_wrapper(classifier, optimizer, epoch, mIoU, save_path, logger)
         
         # Save best model
         if mIoU >= best_iou:
             best_iou = mIoU
             save_path = dirs['checkpoints'] / f'best_model_{feature_group}.pth'
-            save_checkpoint(classifier, optimizer, epoch, mIoU, save_path, logger)
+            save_checkpoint_wrapper(classifier, optimizer, epoch, mIoU, save_path, logger)
         
         log_string(f'Best mIoU so far: {best_iou:.6f}')
 

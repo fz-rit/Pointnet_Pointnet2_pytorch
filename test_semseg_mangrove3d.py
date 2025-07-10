@@ -9,98 +9,34 @@ import torch
 from pathlib import Path
 from tqdm import tqdm
 from typing import Tuple, Dict, Any
-import importlib
 
 from data_utils.Mangrove3DDataLoader import Mangrove3DTestDataset
 from tools import calc_metrics
 from params.config_loader import load_config, create_test_parser
-
-# Configuration
-sys.path.append(os.path.join(os.path.dirname(__file__), 'models'))
-import numpy as np
-import os
-import pandas as pd
-import sys
-import time
-import torch
-from pathlib import Path
-from tqdm import tqdm
-from typing import Tuple, Dict, Any
-import importlib
-
-from data_utils.Mangrove3DDataLoader import Mangrove3DTestDataset
-from tools import calc_metrics
-
-# Configuration
-sys.path.append(os.path.join(os.path.dirname(__file__), 'models'))
-CLASSES = ['Ground', 'Stem', 'Canopy', 'Roots', 'Objects']
-COLOR_MAP = np.array([[128, 0, 128], [165, 42, 42], [0, 128, 0], [255, 165, 0], [255, 255, 0]])
+from config_utils import parse_test_args
+from common_utils import (
+    setup_environment, create_model, load_checkpoint, 
+    setup_basic_logging, setup_console_logging, log_experiment_info
+)
+# CLASSES = ['Ground', 'Stem', 'Canopy', 'Roots', 'Objects']
+# COLOR_MAP = np.array([[128, 0, 128], [165, 42, 42], [0, 128, 0], [255, 165, 0], [255, 255, 0]])
 
 
 def parse_args() -> Tuple[argparse.Namespace, object]:
     """Parse command line arguments using YAML configuration."""
-    # Load default configuration
-    config = load_config()
-    
-    # Create parser with config defaults
-    parser = create_test_parser(config)
-    args = parser.parse_args()
-    
-    # Update config with command line arguments
-    if args.config:
-        config = load_config(args.config)
-        config.update_from_args(args)
-    else:
-        config.update_from_args(args)
-    
-    return args, config
+    return parse_test_args()
 
 
 def setup_logging(output_dir: Path) -> logging.Logger:
     """Setup logging configuration."""
-    logger = logging.getLogger("TestModel")
-    logger.setLevel(logging.INFO)
-    
-    if logger.hasHandlers():
-        logger.handlers.clear()
-    
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    
-    # File handler
-    file_handler = logging.FileHandler(output_dir / 'test_results.txt')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-    
-    # Console handler
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    
-    return logger
+    logger = setup_basic_logging(output_dir / 'test_results.txt', "TestModel")
+    return setup_console_logging(logger)
 
 
 def load_model(model_path: Path, config) -> torch.nn.Module:
     """Load trained model from checkpoint."""
-    MODEL = importlib.import_module(config.get('model.name'))
-    
-    # Determine input channels based on feature group
-    feat_group = config.get('data.feat_group', 'xyz')
-    feature_map = {
-        "xyz": 3,
-        "xyzi0": 4,
-        "xyz_irz": 6,
-        "xyz_p3": 6,
-        "xyz_cap": 6,
-        "xyz_n3": 6
-    }
-    input_channels = feature_map.get(feat_group, 3)
-    
-    model = MODEL.get_model(config.get('model.num_classes'), input_channels=input_channels).cuda()
-    
-    assert model_path.exists(), f"Model not found: {model_path}"
-    checkpoint = torch.load(model_path, weights_only=False)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    
+    model, _ = create_model(config, for_training=False)
+    load_checkpoint(model, model_path, for_training=False)
     return model.eval()
 
 
@@ -217,12 +153,20 @@ def main():
     args, config = parse_args()
     
     # Setup environment and directories
-    os.environ["CUDA_VISIBLE_DEVICES"] = config.get('hardware.gpu')
+    setup_environment(config.get('hardware.gpu'))
     output_dir = Path(config.get('testing.output_dir'))
     output_dir.mkdir(exist_ok=True)
     
     logger = setup_logging(output_dir)
-    logger.info(f"Starting test with arguments: {vars(args)}")
+    log_experiment_info(args, config, logger)
+    
+    # Log auto-generated paths
+    logger.info("=" * 60)
+    logger.info("AUTO-GENERATED PATHS")
+    logger.info("=" * 60)
+    logger.info(f"Model path: {config.get('testing.model_path')}")
+    logger.info(f"Output directory: {config.get('testing.output_dir')}")
+    logger.info("=" * 60)
     
     # Load dataset and model
     dataset = Mangrove3DTestDataset(

@@ -122,7 +122,7 @@ data:
   root_dir: "/path/to/data"
   val_ratio: 0.25          # Validation split ratio
   random_seed: 42          # For reproducible splits
-  color_group: "irz"       # Feature group: irz, p3, cap, n3
+  feat_group: "xyz"       # Feature group: xyz, p3, cap, n3
   num_workers: 10
 
 testing:
@@ -157,7 +157,7 @@ python train_semseg_mangrove3d.py --learning_rate 0.002 --batch_size 16
 
 The system supports multiple feature combinations for point cloud representation:
 
-- **`irz`**: X, Y, Z, intensity_adjusted, range_adjusted, z_adjusted
+- **`xyz`**: X, Y, Z, intensity_adjusted, range_adjusted, z_adjusted
 - **`p3`**: X, Y, Z, PCA1, PCA2, PCA3  
 - **`cap`**: X, Y, Z, curvature, anisotropy, planarity
 - **`n3`**: X, Y, Z, Pseudo-Rn, Pseudo-Gn, Pseudo-Bn
@@ -182,7 +182,7 @@ dataset = Mangrove3DDataset(
     split='train',
     val_ratio=0.25,      # 25% for validation
     random_seed=42,      # Reproducible splits
-    color_group='irz'    # Feature selection
+    feat_group='xyz'    # Feature selection
 )
 ```
 
@@ -191,7 +191,7 @@ dataset = Mangrove3DDataset(
 dataset = Mangrove3DDataset(
     data_root='/path/to/data',
     split='train',       # Uses data/train/ folder
-    color_group='irz'
+    feat_group='xyz'
 )
 ```
 

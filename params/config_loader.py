@@ -74,6 +74,7 @@ class Config:
                     'lr_decay': 'training.lr_decay',
                     'npoint': 'model.npoint',
                     'data_root': 'data.root_dir',
+                    'feat_group': 'data.feat_group',
                     'val_ratio': 'data.val_ratio',
                     'random_seed': 'data.random_seed',
                     'gpu': 'hardware.gpu',

@@ -56,7 +56,7 @@ def setup_logging(log_dir: Path, model_name: str):
 
 def setup_directories(args):
     """Setup experiment directories."""
-    timestr = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+    timestr = datetime.datetime.now().strftime('%Y-%m-%d')
     exp_dir = Path(args.log_dir) if args.log_dir else Path('./log/sem_seg/') / timestr
     exp_dir.mkdir(exist_ok=True)
     
@@ -111,7 +111,19 @@ def setup_model_and_optimizer(args, config):
     MODEL = importlib.import_module(config.get('model.name'))
     num_classes = config.get('model.num_classes')
     
-    classifier = MODEL.get_model(num_classes).cuda()
+    # Determine input channels based on feature group
+    feat_group = config.get('data.feat_group', 'xyz')
+    feature_map = {
+        "xyz": 3,
+        "xyzi0": 4,
+        "xyz_irz": 6,
+        "xyz_p3": 6,
+        "xyz_cap": 6,
+        "xyz_n3": 6
+    }
+    input_channels = feature_map.get(feat_group, 3)
+    
+    classifier = MODEL.get_model(num_classes, input_channels=input_channels).cuda()
     criterion = MODEL.get_loss().cuda()
     
     # Apply inplace ReLU

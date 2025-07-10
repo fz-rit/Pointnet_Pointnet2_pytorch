@@ -24,7 +24,7 @@ data:
   root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024/temp"
   val_ratio: 0.2  # Smaller validation set
   random_seed: 42
-  color_group: "irz"
+  feat_group: "xyz"
   num_workers: 4  # Fewer workers
 
 # Testing Parameters

@@ -11,7 +11,7 @@ model:
 # Training Parameters
 training:
   batch_size: 32
-  epochs: 30
+  epochs: 40
   learning_rate: 0.001
   optimizer: "Adam"
   decay_rate: 1e-4
@@ -24,17 +24,17 @@ data:
   root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024"
   val_ratio: 0.1  # 10% for validation
   random_seed: 42
-  color_group: "irz"  # Options: irz, p3, cap, n3
+  feat_group: "xyz"  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3
   num_workers: 10
 
 # Testing Parameters
 testing:
-  batch_size: 32
+  batch_size: 16
   block_points: 4096
   num_votes: 3
   test_idx: 0
   visual: true
-  model_path: "./log/sem_seg/2025-07-09_21-05/checkpoints/best_model_2025-07-09_21-05.pth"
+  model_path: "./log/sem_seg/2025-07-10/checkpoints/best_model_2025-07-10.pth"
   output_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024/test_results"
 
 # Hardware Configuration
@@ -46,7 +46,7 @@ hardware:
 # Logging Configuration
 logging:
   log_dir: null  # If null, will use timestamp-based directory
-  save_interval: 5  # Save checkpoint every N epochs
+  save_interval: 20  # Save checkpoint every N epochs
 
 # Class Configuration
 classes:

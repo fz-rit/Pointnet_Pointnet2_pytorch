@@ -14,28 +14,41 @@ def convert_labels(labels: np.ndarray) -> np.ndarray:
     return labels - 1 if labels.min() == 1 else labels
 
 
-def get_color_group(color_group: str) -> List[str]:
+def get_feat_group(feat_group: str) -> List[str]:
     """Get column names for different color feature groups."""
-    color_groups = {
-        "irz": ['X', 'Y', 'Z', 'intensity_adjusted', 'range_adjusted', 'z_adjusted'],
-        "p3": ['X', 'Y', 'Z', 'PCA1', 'PCA2', 'PCA3'],
-        "cap": ['X', 'Y', 'Z', 'curvature', 'anisotropy', 'planarity'],
-        "n3": ['X', 'Y', 'Z', 'Pseudo-Rn', 'Pseudo-Gn', 'Pseudo-Bn']
+    feat_groups = {
+        "xyz": ['X', 'Y', 'Z'],  # Only spatial coordinates
+        "xyzi0": ['X', 'Y', 'Z', 'Intensity'],  # Spatial + intensity
+        "xyz_irz": ['X', 'Y', 'Z', 'intensity_adjusted', 'range_adjusted', 'z_adjusted'],
+        "xyz_p3": ['X', 'Y', 'Z', 'PCA1', 'PCA2', 'PCA3'],
+        "xyz_cap": ['X', 'Y', 'Z', 'curvature', 'anisotropy', 'planarity'],
+        "xyz_n3": ['X', 'Y', 'Z', 'Pseudo-Rn', 'Pseudo-Gn', 'Pseudo-Bn']
     }
-    if color_group not in color_groups:
-        raise ValueError(f"Invalid color group '{color_group}'. Valid: {list(color_groups.keys())}")
-    return color_groups[color_group]
+    if feat_group not in feat_groups:
+        raise ValueError(f"Invalid color group '{feat_group}'. Valid: {list(feat_groups.keys())}")
+    return feat_groups[feat_group]
+
+def normalize_extra_feature_zscore(points: np.ndarray, feature_idx: int) -> np.ndarray:
+    """Normalize additional features (e.g., intensity) using Z-score."""
+    feature = points[:, feature_idx]
+    mean = np.mean(feature)
+    std = np.std(feature)
+    if std > 0:
+        points[:, feature_idx] = (feature - mean) / std
+    else:
+        points[:, feature_idx] = 0.0  # If std is zero, set to zero
+    return points
 
 
 class BaseMangrove3DDataset:
     """Base class for Mangrove3D datasets."""
     
-    def __init__(self, data_root: str, split: str, num_class: int = 5, color_group: str = "irz", 
+    def __init__(self, data_root: str, split: str, num_class: int = 5, feat_group: str = "xyz", 
                  val_ratio: float = 0.25, random_seed: int = 42):
         self.data_root = Path(data_root)
         self.split = split
         self.num_class = num_class
-        self.pts_col_names = get_color_group(color_group)
+        self.pts_col_names = get_feat_group(feat_group)
         self.val_ratio = val_ratio
         self.random_seed = random_seed
         
@@ -111,10 +124,10 @@ class Mangrove3DDataset(Dataset, BaseMangrove3DDataset):
     def __init__(self, split: str = 'train', data_root: str = None, 
                  num_point: int = 4096, block_size: float = 40.0, 
                  sample_rate: float = 1.0, num_class: int = 5, 
-                 transform: Optional[callable] = None, color_group: str = "irz",
+                 transform: Optional[callable] = None, feat_group: str = "xyz",
                  val_ratio: float = 0.25, random_seed: int = 42):
         Dataset.__init__(self)
-        BaseMangrove3DDataset.__init__(self, data_root, split, num_class, color_group, val_ratio, random_seed)
+        BaseMangrove3DDataset.__init__(self, data_root, split, num_class, feat_group, val_ratio, random_seed)
         
         self.num_point = num_point
         self.block_size = block_size
@@ -168,17 +181,19 @@ class Mangrove3DDataset(Dataset, BaseMangrove3DDataset):
                                        replace=len(point_idxs) < self.num_point)
         selected_points = points[selected_idxs].copy()
         
-        # Normalize features
-        normalized_points = np.zeros((self.num_point, 9))
-        coord_max = self.scan_coord_max[scan_idx]
+        # Use only the input features (no global normalization)
+        num_features = len(self.pts_col_names)
+        normalized_points = np.zeros((self.num_point, num_features))
         
-        # Global normalization
-        normalized_points[:, 6:9] = selected_points[:, :3] / coord_max
-        
-        # Center and normalize
+        # Center X,Y relative to block center
         selected_points[:, :2] -= center[:2]
-        selected_points[:, 3:6] /= 255.0
-        normalized_points[:, :6] = selected_points
+        
+        # Normalize non-coordinate features (if any)
+        if num_features > 3:
+            for i in range(3, num_features):
+                selected_points = normalize_extra_feature_zscore(selected_points, i)
+        
+        normalized_points = selected_points
         
         current_labels = labels[selected_idxs]
         
@@ -196,9 +211,9 @@ class Mangrove3DTestDataset(BaseMangrove3DDataset):
     
     def __init__(self, data_root: str, block_points: int = 4096, split: str = 'test', 
                  stride: int = 1, num_class: int = 5, block_size: float = 1.0, 
-                 padding: float = 0.001, color_group: str = "irz",
+                 padding: float = 0.001, feat_group: str = "xyz",
                  val_ratio: float = 0.25, random_seed: int = 42):
-        super().__init__(data_root, split, num_class, color_group, val_ratio, random_seed)
+        super().__init__(data_root, split, num_class, feat_group, val_ratio, random_seed)
         
         self.block_points = block_points
         self.block_size = block_size
@@ -217,7 +232,9 @@ class Mangrove3DTestDataset(BaseMangrove3DDataset):
         self.labelweights = self.compute_label_weights(self.semantic_labels_list)
 
     def __getitem__(self, index: int) -> Tuple[np.ndarray, ...]:
-        points = self.scene_points_list[index][:, :6]
+        # Use the actual number of features from the feature group
+        num_features = len(self.pts_col_names)
+        points = self.scene_points_list[index][:, :num_features]
         labels = self.semantic_labels_list[index]
         coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
         
@@ -256,12 +273,16 @@ class Mangrove3DTestDataset(BaseMangrove3DDataset):
                 # Process batch
                 data_batch = points[point_idxs].copy()
                 
-                # Normalize and translate
-                normalized_xyz = data_batch[:, :3] / coord_max
+                # Center the coordinates relative to block center
                 data_batch[:, 0] -= (start_x + self.block_size / 2.0)
                 data_batch[:, 1] -= (start_y + self.block_size / 2.0)
-                data_batch[:, 3:6] /= 255.0
-                data_batch = np.concatenate([data_batch, normalized_xyz], axis=1)
+                
+                # Normalize additional features (if any) - skip RGB normalization for now
+                if num_features > 3:
+                    for i in range(3, num_features):
+                        data_batch = normalize_extra_feature_zscore(data_batch, i)
+                
+                # No additional concatenation of normalized coordinates for consistency with training
                 
                 label_batch = labels[point_idxs].astype(int)
                 weight_batch = self.labelweights[label_batch]
@@ -287,13 +308,13 @@ class Mangrove3DTestDataset(BaseMangrove3DDataset):
 
 def main():
     """Example usage and testing."""
-    data_root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024/temp'
+    data_root = '/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024'
     config = {
         'num_point': 4096, 
         'block_size': 40, 
         'num_class': 5, 
         'sample_rate': 0.1, 
-        'color_group': "irz",
+        'feat_group': "xyz",
         'val_ratio': 0.25,  # 25% for validation
         'random_seed': 42   # For reproducible splits
     }

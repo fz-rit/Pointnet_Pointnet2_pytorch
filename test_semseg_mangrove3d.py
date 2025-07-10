@@ -82,7 +82,20 @@ def setup_logging(output_dir: Path) -> logging.Logger:
 def load_model(model_path: Path, config) -> torch.nn.Module:
     """Load trained model from checkpoint."""
     MODEL = importlib.import_module(config.get('model.name'))
-    model = MODEL.get_model(config.get('model.num_classes')).cuda()
+    
+    # Determine input channels based on feature group
+    feat_group = config.get('data.feat_group', 'xyz')
+    feature_map = {
+        "xyz": 3,
+        "xyzi0": 4,
+        "xyz_irz": 6,
+        "xyz_p3": 6,
+        "xyz_cap": 6,
+        "xyz_n3": 6
+    }
+    input_channels = feature_map.get(feat_group, 3)
+    
+    model = MODEL.get_model(config.get('model.num_classes'), input_channels=input_channels).cuda()
     
     assert model_path.exists(), f"Model not found: {model_path}"
     checkpoint = torch.load(model_path, weights_only=False)

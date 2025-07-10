@@ -1,0 +1,61 @@
+# Quick Training Configuration
+# Reduced parameters for fast experimentation
+
+# Model Configuration
+model:
+  name: "pointnet2_sem_seg"
+  num_classes: 5
+  npoint: 2048  # Reduced for faster training
+  block_size: 20.0  # Smaller blocks
+
+# Training Parameters
+training:
+  batch_size: 16  # Smaller batch size
+  epochs: 3      # Few epochs for quick testing
+  learning_rate: 0.002  # Slightly higher LR
+  optimizer: "Adam"
+  decay_rate: 1e-4
+  step_size: 5    # More frequent LR decay
+  lr_decay: 0.8
+  sample_rate: 0.5  # Use only 50% of data
+
+# Data Configuration
+data:
+  root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024/temp"
+  val_ratio: 0.2  # Smaller validation set
+  random_seed: 42
+  color_group: "irz"
+  num_workers: 4  # Fewer workers
+
+# Testing Parameters
+testing:
+  batch_size: 16
+  block_points: 2048
+  num_votes: 1  # Single vote for speed
+  test_idx: 0
+  visual: true
+  model_path: "./log/sem_seg/quick_test/checkpoints/best_model.pth"
+  output_dir: "/tmp/quick_results"
+
+# Hardware Configuration
+hardware:
+  gpu: "0"
+  pin_memory: true
+  drop_last: true
+
+# Logging Configuration
+logging:
+  log_dir: "./log/sem_seg/quick_test"
+  save_interval: 2  # Save more frequently
+
+# Class Configuration
+classes:
+  names: ["Ground", "Stem", "Canopy", "Roots", "Objects"]
+  colors: [[128, 0, 128], [165, 42, 42], [0, 128, 0], [255, 165, 0], [255, 255, 0]]
+
+# Paths
+paths:
+  models_dir: "models"
+  log_dir: "log/sem_seg"
+  checkpoints_dir: "checkpoints"
+  results_dir: "results"

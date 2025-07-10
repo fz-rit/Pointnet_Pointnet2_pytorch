@@ -1,0 +1,502 @@
+2025-07-09 14:48:09,087 - Model - INFO - PARAMETER ...
+2025-07-09 14:48:09,087 - Model - INFO - Namespace(batch_size=32, decay_rate=0.0001, epoch=24, gpu='0', learning_rate=0.001, log_dir='pointnet2_sem_seg', lr_decay=0.7, model='pointnet2_sem_seg', npoint=4096, optimizer='Adam', step_size=10)
+2025-07-09 14:48:15,891 - Model - INFO - The number of training data is: 731
+2025-07-09 14:48:15,891 - Model - INFO - The number of validation data is: 731
+2025-07-09 14:48:15,903 - Model - INFO - No proper existing model, starting training from scratch...
+2025-07-09 14:48:16,216 - Model - INFO - **** Epoch 1 (1/24) ****
+2025-07-09 14:48:16,216 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:01:46,157 - Model - INFO - PARAMETER ...
+2025-07-09 15:01:46,157 - Model - INFO - Namespace(batch_size=32, decay_rate=0.0001, epoch=24, gpu='0', learning_rate=0.001, log_dir='pointnet2_sem_seg', lr_decay=0.7, model='pointnet2_sem_seg', npoint=4096, optimizer='Adam', step_size=10)
+2025-07-09 15:01:50,794 - Model - INFO - The number of training data is: 564
+2025-07-09 15:01:50,794 - Model - INFO - The number of validation data is: 403
+2025-07-09 15:01:50,803 - Model - INFO - No proper existing model, starting training from scratch...
+2025-07-09 15:01:51,034 - Model - INFO - **** Epoch 1 (1/24) ****
+2025-07-09 15:01:51,034 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:08:31,263 - Model - INFO - PARAMETER ...
+2025-07-09 15:08:31,263 - Model - INFO - Namespace(batch_size=32, decay_rate=0.0001, epoch=24, gpu='0', learning_rate=0.001, log_dir='pointnet2_sem_seg', lr_decay=0.7, model='pointnet2_sem_seg', npoint=4096, optimizer='Adam', step_size=10)
+2025-07-09 15:08:35,807 - Model - INFO - The number of training data is: 564
+2025-07-09 15:08:35,807 - Model - INFO - The number of validation data is: 403
+2025-07-09 15:08:35,814 - Model - INFO - No proper existing model, starting training from scratch...
+2025-07-09 15:08:36,046 - Model - INFO - **** Epoch 1 (1/24) ****
+2025-07-09 15:08:36,046 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:08:45,403 - Model - INFO - Training mean loss: 1.116697
+2025-07-09 15:08:45,403 - Model - INFO - Training accuracy: 0.570445
+2025-07-09 15:08:45,403 - Model - INFO - Save model...
+2025-07-09 15:08:45,403 - Model - INFO - Saving at pointnet2_sem_seg/checkpoints/model_2025-07-09_15-08.pth
+2025-07-09 15:08:45,418 - Model - INFO - Saving model....
+2025-07-09 15:08:45,419 - Model - INFO - ---- EPOCH 001 EVALUATION ----
+2025-07-09 15:08:50,667 - Model - INFO - eval mean loss: 1.455920
+2025-07-09 15:08:50,667 - Model - INFO - eval point avg class IoU: 0.081922
+2025-07-09 15:08:50,667 - Model - INFO - eval point accuracy: 0.383061
+2025-07-09 15:08:50,667 - Model - INFO - eval point avg class acc: 0.201617
+2025-07-09 15:08:50,667 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.000 
+class Stem   weight: 0.255, IoU: 0.002 
+class Canopy weight: 0.038, IoU: 0.008 
+class Roots  weight: 0.318, IoU: 0.400 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:08:50,667 - Model - INFO - Eval mean loss: 1.455920
+2025-07-09 15:08:50,667 - Model - INFO - Eval accuracy: 0.383061
+2025-07-09 15:08:50,667 - Model - INFO - Save model...
+2025-07-09 15:08:50,667 - Model - INFO - Saving at pointnet2_sem_seg/checkpoints/model_2025-07-09_15-08.pth
+2025-07-09 15:08:50,686 - Model - INFO - Saving model....
+2025-07-09 15:08:50,686 - Model - INFO - Best mIoU: 0.081922
+2025-07-09 15:08:50,686 - Model - INFO - **** Epoch 2 (2/24) ****
+2025-07-09 15:08:50,686 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:08:59,581 - Model - INFO - Training mean loss: 0.759862
+2025-07-09 15:08:59,581 - Model - INFO - Training accuracy: 0.705860
+2025-07-09 15:08:59,582 - Model - INFO - ---- EPOCH 002 EVALUATION ----
+2025-07-09 15:09:04,898 - Model - INFO - eval mean loss: 1.149669
+2025-07-09 15:09:04,898 - Model - INFO - eval point avg class IoU: 0.245227
+2025-07-09 15:09:04,899 - Model - INFO - eval point accuracy: 0.504564
+2025-07-09 15:09:04,899 - Model - INFO - eval point avg class acc: 0.381559
+2025-07-09 15:09:04,899 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.563 
+class Stem   weight: 0.255, IoU: 0.039 
+class Canopy weight: 0.038, IoU: 0.239 
+class Roots  weight: 0.317, IoU: 0.384 
+class Objects weight: 0.383, IoU: 0.000 
+
+2025-07-09 15:09:04,899 - Model - INFO - Eval mean loss: 1.149669
+2025-07-09 15:09:04,899 - Model - INFO - Eval accuracy: 0.504564
+2025-07-09 15:09:04,899 - Model - INFO - Save model...
+2025-07-09 15:09:04,899 - Model - INFO - Saving at pointnet2_sem_seg/checkpoints/model_2025-07-09_15-08.pth
+2025-07-09 15:09:04,925 - Model - INFO - Saving model....
+2025-07-09 15:09:04,925 - Model - INFO - Best mIoU: 0.245227
+2025-07-09 15:09:04,925 - Model - INFO - **** Epoch 3 (3/24) ****
+2025-07-09 15:09:04,925 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:09:14,347 - Model - INFO - Training mean loss: 0.681848
+2025-07-09 15:09:14,347 - Model - INFO - Training accuracy: 0.733294
+2025-07-09 15:09:14,348 - Model - INFO - ---- EPOCH 003 EVALUATION ----
+2025-07-09 15:09:20,046 - Model - INFO - eval mean loss: 1.283760
+2025-07-09 15:09:20,047 - Model - INFO - eval point avg class IoU: 0.233092
+2025-07-09 15:09:20,047 - Model - INFO - eval point accuracy: 0.491976
+2025-07-09 15:09:20,047 - Model - INFO - eval point avg class acc: 0.387962
+2025-07-09 15:09:20,047 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.522 
+class Stem   weight: 0.255, IoU: 0.049 
+class Canopy weight: 0.038, IoU: 0.359 
+class Roots  weight: 0.318, IoU: 0.236 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:09:20,047 - Model - INFO - Eval mean loss: 1.283760
+2025-07-09 15:09:20,047 - Model - INFO - Eval accuracy: 0.491976
+2025-07-09 15:09:20,047 - Model - INFO - Best mIoU: 0.245227
+2025-07-09 15:09:20,047 - Model - INFO - **** Epoch 4 (4/24) ****
+2025-07-09 15:09:20,047 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:09:29,603 - Model - INFO - Training mean loss: 0.655714
+2025-07-09 15:09:29,603 - Model - INFO - Training accuracy: 0.741872
+2025-07-09 15:09:29,604 - Model - INFO - ---- EPOCH 004 EVALUATION ----
+2025-07-09 15:09:35,053 - Model - INFO - eval mean loss: 1.080380
+2025-07-09 15:09:35,053 - Model - INFO - eval point avg class IoU: 0.287846
+2025-07-09 15:09:35,053 - Model - INFO - eval point accuracy: 0.557779
+2025-07-09 15:09:35,053 - Model - INFO - eval point avg class acc: 0.423994
+2025-07-09 15:09:35,053 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.562 
+class Stem   weight: 0.255, IoU: 0.059 
+class Canopy weight: 0.038, IoU: 0.337 
+class Roots  weight: 0.319, IoU: 0.481 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:09:35,053 - Model - INFO - Eval mean loss: 1.080380
+2025-07-09 15:09:35,053 - Model - INFO - Eval accuracy: 0.557779
+2025-07-09 15:09:35,053 - Model - INFO - Save model...
+2025-07-09 15:09:35,053 - Model - INFO - Saving at pointnet2_sem_seg/checkpoints/model_2025-07-09_15-08.pth
+2025-07-09 15:09:35,079 - Model - INFO - Saving model....
+2025-07-09 15:09:35,079 - Model - INFO - Best mIoU: 0.287846
+2025-07-09 15:09:35,079 - Model - INFO - **** Epoch 5 (5/24) ****
+2025-07-09 15:09:35,079 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:09:44,249 - Model - INFO - Training mean loss: 0.635603
+2025-07-09 15:09:44,249 - Model - INFO - Training accuracy: 0.748412
+2025-07-09 15:09:44,250 - Model - INFO - ---- EPOCH 005 EVALUATION ----
+2025-07-09 15:09:49,714 - Model - INFO - eval mean loss: 1.187813
+2025-07-09 15:09:49,714 - Model - INFO - eval point avg class IoU: 0.239610
+2025-07-09 15:09:49,714 - Model - INFO - eval point accuracy: 0.490854
+2025-07-09 15:09:49,715 - Model - INFO - eval point avg class acc: 0.398469
+2025-07-09 15:09:49,715 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.572 
+class Stem   weight: 0.256, IoU: 0.051 
+class Canopy weight: 0.038, IoU: 0.245 
+class Roots  weight: 0.318, IoU: 0.330 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:09:49,715 - Model - INFO - Eval mean loss: 1.187813
+2025-07-09 15:09:49,715 - Model - INFO - Eval accuracy: 0.490854
+2025-07-09 15:09:49,715 - Model - INFO - Best mIoU: 0.287846
+2025-07-09 15:09:49,715 - Model - INFO - **** Epoch 6 (6/24) ****
+2025-07-09 15:09:49,715 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:09:58,904 - Model - INFO - Training mean loss: 0.590924
+2025-07-09 15:09:58,904 - Model - INFO - Training accuracy: 0.772417
+2025-07-09 15:09:58,904 - Model - INFO - Save model...
+2025-07-09 15:09:58,904 - Model - INFO - Saving at pointnet2_sem_seg/checkpoints/model_2025-07-09_15-08.pth
+2025-07-09 15:09:58,932 - Model - INFO - Saving model....
+2025-07-09 15:09:58,933 - Model - INFO - ---- EPOCH 006 EVALUATION ----
+2025-07-09 15:10:04,424 - Model - INFO - eval mean loss: 1.065102
+2025-07-09 15:10:04,424 - Model - INFO - eval point avg class IoU: 0.285224
+2025-07-09 15:10:04,424 - Model - INFO - eval point accuracy: 0.553487
+2025-07-09 15:10:04,424 - Model - INFO - eval point avg class acc: 0.431514
+2025-07-09 15:10:04,424 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.647 
+class Stem   weight: 0.255, IoU: 0.054 
+class Canopy weight: 0.038, IoU: 0.276 
+class Roots  weight: 0.318, IoU: 0.448 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:10:04,424 - Model - INFO - Eval mean loss: 1.065102
+2025-07-09 15:10:04,424 - Model - INFO - Eval accuracy: 0.553487
+2025-07-09 15:10:04,424 - Model - INFO - Best mIoU: 0.287846
+2025-07-09 15:10:04,424 - Model - INFO - **** Epoch 7 (7/24) ****
+2025-07-09 15:10:04,424 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:10:13,608 - Model - INFO - Training mean loss: 0.597035
+2025-07-09 15:10:13,608 - Model - INFO - Training accuracy: 0.769561
+2025-07-09 15:10:13,609 - Model - INFO - ---- EPOCH 007 EVALUATION ----
+2025-07-09 15:10:19,126 - Model - INFO - eval mean loss: 1.020917
+2025-07-09 15:10:19,126 - Model - INFO - eval point avg class IoU: 0.320246
+2025-07-09 15:10:19,126 - Model - INFO - eval point accuracy: 0.597881
+2025-07-09 15:10:19,126 - Model - INFO - eval point avg class acc: 0.473397
+2025-07-09 15:10:19,126 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.636 
+class Stem   weight: 0.256, IoU: 0.074 
+class Canopy weight: 0.038, IoU: 0.447 
+class Roots  weight: 0.318, IoU: 0.443 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:10:19,126 - Model - INFO - Eval mean loss: 1.020917
+2025-07-09 15:10:19,126 - Model - INFO - Eval accuracy: 0.597881
+2025-07-09 15:10:19,126 - Model - INFO - Save model...
+2025-07-09 15:10:19,126 - Model - INFO - Saving at pointnet2_sem_seg/checkpoints/model_2025-07-09_15-08.pth
+2025-07-09 15:10:19,152 - Model - INFO - Saving model....
+2025-07-09 15:10:19,152 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:10:19,152 - Model - INFO - **** Epoch 8 (8/24) ****
+2025-07-09 15:10:19,152 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:10:28,365 - Model - INFO - Training mean loss: 0.579962
+2025-07-09 15:10:28,365 - Model - INFO - Training accuracy: 0.779873
+2025-07-09 15:10:28,366 - Model - INFO - ---- EPOCH 008 EVALUATION ----
+2025-07-09 15:10:33,861 - Model - INFO - eval mean loss: 1.119746
+2025-07-09 15:10:33,861 - Model - INFO - eval point avg class IoU: 0.277614
+2025-07-09 15:10:33,861 - Model - INFO - eval point accuracy: 0.542809
+2025-07-09 15:10:33,861 - Model - INFO - eval point avg class acc: 0.420613
+2025-07-09 15:10:33,861 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.646 
+class Stem   weight: 0.256, IoU: 0.051 
+class Canopy weight: 0.038, IoU: 0.233 
+class Roots  weight: 0.318, IoU: 0.458 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:10:33,861 - Model - INFO - Eval mean loss: 1.119746
+2025-07-09 15:10:33,861 - Model - INFO - Eval accuracy: 0.542809
+2025-07-09 15:10:33,861 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:10:33,861 - Model - INFO - **** Epoch 9 (9/24) ****
+2025-07-09 15:10:33,861 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:10:43,112 - Model - INFO - Training mean loss: 0.561151
+2025-07-09 15:10:43,112 - Model - INFO - Training accuracy: 0.790012
+2025-07-09 15:10:43,113 - Model - INFO - ---- EPOCH 009 EVALUATION ----
+2025-07-09 15:10:48,639 - Model - INFO - eval mean loss: 1.106810
+2025-07-09 15:10:48,639 - Model - INFO - eval point avg class IoU: 0.283462
+2025-07-09 15:10:48,639 - Model - INFO - eval point accuracy: 0.551405
+2025-07-09 15:10:48,639 - Model - INFO - eval point avg class acc: 0.434937
+2025-07-09 15:10:48,639 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.654 
+class Stem   weight: 0.254, IoU: 0.056 
+class Canopy weight: 0.038, IoU: 0.275 
+class Roots  weight: 0.319, IoU: 0.432 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:10:48,639 - Model - INFO - Eval mean loss: 1.106810
+2025-07-09 15:10:48,639 - Model - INFO - Eval accuracy: 0.551405
+2025-07-09 15:10:48,639 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:10:48,639 - Model - INFO - **** Epoch 10 (10/24) ****
+2025-07-09 15:10:48,639 - Model - INFO - Learning rate:0.001000
+2025-07-09 15:10:57,870 - Model - INFO - Training mean loss: 0.555027
+2025-07-09 15:10:57,870 - Model - INFO - Training accuracy: 0.791878
+2025-07-09 15:10:57,871 - Model - INFO - ---- EPOCH 010 EVALUATION ----
+2025-07-09 15:11:03,384 - Model - INFO - eval mean loss: 1.082450
+2025-07-09 15:11:03,384 - Model - INFO - eval point avg class IoU: 0.290641
+2025-07-09 15:11:03,384 - Model - INFO - eval point accuracy: 0.560451
+2025-07-09 15:11:03,384 - Model - INFO - eval point avg class acc: 0.437103
+2025-07-09 15:11:03,384 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.573 
+class Stem   weight: 0.256, IoU: 0.066 
+class Canopy weight: 0.038, IoU: 0.368 
+class Roots  weight: 0.317, IoU: 0.446 
+class Objects weight: 0.383, IoU: 0.000 
+
+2025-07-09 15:11:03,384 - Model - INFO - Eval mean loss: 1.082450
+2025-07-09 15:11:03,384 - Model - INFO - Eval accuracy: 0.560451
+2025-07-09 15:11:03,384 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:11:03,384 - Model - INFO - **** Epoch 11 (11/24) ****
+2025-07-09 15:11:03,384 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:11:12,632 - Model - INFO - Training mean loss: 0.545106
+2025-07-09 15:11:12,632 - Model - INFO - Training accuracy: 0.792703
+2025-07-09 15:11:12,632 - Model - INFO - Save model...
+2025-07-09 15:11:12,632 - Model - INFO - Saving at pointnet2_sem_seg/checkpoints/model_2025-07-09_15-08.pth
+2025-07-09 15:11:12,648 - Model - INFO - Saving model....
+2025-07-09 15:11:12,649 - Model - INFO - ---- EPOCH 011 EVALUATION ----
+2025-07-09 15:11:18,169 - Model - INFO - eval mean loss: 1.271295
+2025-07-09 15:11:18,169 - Model - INFO - eval point avg class IoU: 0.248001
+2025-07-09 15:11:18,169 - Model - INFO - eval point accuracy: 0.506027
+2025-07-09 15:11:18,169 - Model - INFO - eval point avg class acc: 0.405738
+2025-07-09 15:11:18,169 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.589 
+class Stem   weight: 0.256, IoU: 0.051 
+class Canopy weight: 0.038, IoU: 0.264 
+class Roots  weight: 0.318, IoU: 0.336 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:11:18,169 - Model - INFO - Eval mean loss: 1.271295
+2025-07-09 15:11:18,169 - Model - INFO - Eval accuracy: 0.506027
+2025-07-09 15:11:18,169 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:11:18,169 - Model - INFO - **** Epoch 12 (12/24) ****
+2025-07-09 15:11:18,169 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:11:27,413 - Model - INFO - Training mean loss: 0.532626
+2025-07-09 15:11:27,413 - Model - INFO - Training accuracy: 0.801309
+2025-07-09 15:11:27,414 - Model - INFO - ---- EPOCH 012 EVALUATION ----
+2025-07-09 15:11:32,943 - Model - INFO - eval mean loss: 1.040856
+2025-07-09 15:11:32,943 - Model - INFO - eval point avg class IoU: 0.316340
+2025-07-09 15:11:32,943 - Model - INFO - eval point accuracy: 0.594505
+2025-07-09 15:11:32,943 - Model - INFO - eval point avg class acc: 0.455631
+2025-07-09 15:11:32,943 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.618 
+class Stem   weight: 0.255, IoU: 0.069 
+class Canopy weight: 0.038, IoU: 0.394 
+class Roots  weight: 0.317, IoU: 0.501 
+class Objects weight: 0.383, IoU: 0.000 
+
+2025-07-09 15:11:32,943 - Model - INFO - Eval mean loss: 1.040856
+2025-07-09 15:11:32,943 - Model - INFO - Eval accuracy: 0.594505
+2025-07-09 15:11:32,943 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:11:32,943 - Model - INFO - **** Epoch 13 (13/24) ****
+2025-07-09 15:11:32,943 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:11:42,179 - Model - INFO - Training mean loss: 0.539764
+2025-07-09 15:11:42,179 - Model - INFO - Training accuracy: 0.797115
+2025-07-09 15:11:42,179 - Model - INFO - ---- EPOCH 013 EVALUATION ----
+2025-07-09 15:11:47,724 - Model - INFO - eval mean loss: 1.058178
+2025-07-09 15:11:47,724 - Model - INFO - eval point avg class IoU: 0.311754
+2025-07-09 15:11:47,724 - Model - INFO - eval point accuracy: 0.578825
+2025-07-09 15:11:47,724 - Model - INFO - eval point avg class acc: 0.484561
+2025-07-09 15:11:47,724 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.665 
+class Stem   weight: 0.255, IoU: 0.079 
+class Canopy weight: 0.038, IoU: 0.386 
+class Roots  weight: 0.319, IoU: 0.428 
+class Objects weight: 0.382, IoU: 0.001 
+
+2025-07-09 15:11:47,724 - Model - INFO - Eval mean loss: 1.058178
+2025-07-09 15:11:47,724 - Model - INFO - Eval accuracy: 0.578825
+2025-07-09 15:11:47,724 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:11:47,724 - Model - INFO - **** Epoch 14 (14/24) ****
+2025-07-09 15:11:47,724 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:11:57,011 - Model - INFO - Training mean loss: 0.525029
+2025-07-09 15:11:57,011 - Model - INFO - Training accuracy: 0.805660
+2025-07-09 15:11:57,012 - Model - INFO - ---- EPOCH 014 EVALUATION ----
+2025-07-09 15:12:02,566 - Model - INFO - eval mean loss: 1.087738
+2025-07-09 15:12:02,566 - Model - INFO - eval point avg class IoU: 0.297445
+2025-07-09 15:12:02,566 - Model - INFO - eval point accuracy: 0.569901
+2025-07-09 15:12:02,566 - Model - INFO - eval point avg class acc: 0.437889
+2025-07-09 15:12:02,566 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.564 
+class Stem   weight: 0.255, IoU: 0.067 
+class Canopy weight: 0.038, IoU: 0.347 
+class Roots  weight: 0.317, IoU: 0.509 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:12:02,566 - Model - INFO - Eval mean loss: 1.087738
+2025-07-09 15:12:02,566 - Model - INFO - Eval accuracy: 0.569901
+2025-07-09 15:12:02,566 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:12:02,566 - Model - INFO - **** Epoch 15 (15/24) ****
+2025-07-09 15:12:02,566 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:12:11,876 - Model - INFO - Training mean loss: 0.518667
+2025-07-09 15:12:11,876 - Model - INFO - Training accuracy: 0.807772
+2025-07-09 15:12:11,877 - Model - INFO - ---- EPOCH 015 EVALUATION ----
+2025-07-09 15:12:17,448 - Model - INFO - eval mean loss: 1.165149
+2025-07-09 15:12:17,448 - Model - INFO - eval point avg class IoU: 0.225481
+2025-07-09 15:12:17,448 - Model - INFO - eval point accuracy: 0.491523
+2025-07-09 15:12:17,448 - Model - INFO - eval point avg class acc: 0.375764
+2025-07-09 15:12:17,448 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.237 
+class Stem   weight: 0.256, IoU: 0.069 
+class Canopy weight: 0.038, IoU: 0.363 
+class Roots  weight: 0.317, IoU: 0.458 
+class Objects weight: 0.383, IoU: 0.000 
+
+2025-07-09 15:12:17,448 - Model - INFO - Eval mean loss: 1.165149
+2025-07-09 15:12:17,448 - Model - INFO - Eval accuracy: 0.491523
+2025-07-09 15:12:17,448 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:12:17,448 - Model - INFO - **** Epoch 16 (16/24) ****
+2025-07-09 15:12:17,448 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:12:26,809 - Model - INFO - Training mean loss: 0.522004
+2025-07-09 15:12:26,809 - Model - INFO - Training accuracy: 0.806236
+2025-07-09 15:12:26,809 - Model - INFO - Save model...
+2025-07-09 15:12:26,810 - Model - INFO - Saving at pointnet2_sem_seg/checkpoints/model_2025-07-09_15-08.pth
+2025-07-09 15:12:26,837 - Model - INFO - Saving model....
+2025-07-09 15:12:26,838 - Model - INFO - ---- EPOCH 016 EVALUATION ----
+2025-07-09 15:12:32,371 - Model - INFO - eval mean loss: 1.076161
+2025-07-09 15:12:32,371 - Model - INFO - eval point avg class IoU: 0.308403
+2025-07-09 15:12:32,371 - Model - INFO - eval point accuracy: 0.587203
+2025-07-09 15:12:32,371 - Model - INFO - eval point avg class acc: 0.439883
+2025-07-09 15:12:32,371 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.618 
+class Stem   weight: 0.255, IoU: 0.061 
+class Canopy weight: 0.038, IoU: 0.338 
+class Roots  weight: 0.317, IoU: 0.524 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:12:32,371 - Model - INFO - Eval mean loss: 1.076161
+2025-07-09 15:12:32,371 - Model - INFO - Eval accuracy: 0.587203
+2025-07-09 15:12:32,371 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:12:32,371 - Model - INFO - **** Epoch 17 (17/24) ****
+2025-07-09 15:12:32,371 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:12:41,695 - Model - INFO - Training mean loss: 0.522759
+2025-07-09 15:12:41,695 - Model - INFO - Training accuracy: 0.803031
+2025-07-09 15:12:41,696 - Model - INFO - ---- EPOCH 017 EVALUATION ----
+2025-07-09 15:12:47,244 - Model - INFO - eval mean loss: 1.068041
+2025-07-09 15:12:47,244 - Model - INFO - eval point avg class IoU: 0.304922
+2025-07-09 15:12:47,244 - Model - INFO - eval point accuracy: 0.575782
+2025-07-09 15:12:47,244 - Model - INFO - eval point avg class acc: 0.447815
+2025-07-09 15:12:47,244 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.657 
+class Stem   weight: 0.255, IoU: 0.061 
+class Canopy weight: 0.038, IoU: 0.303 
+class Roots  weight: 0.318, IoU: 0.503 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:12:47,244 - Model - INFO - Eval mean loss: 1.068041
+2025-07-09 15:12:47,244 - Model - INFO - Eval accuracy: 0.575782
+2025-07-09 15:12:47,244 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:12:47,244 - Model - INFO - **** Epoch 18 (18/24) ****
+2025-07-09 15:12:47,244 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:12:56,550 - Model - INFO - Training mean loss: 0.513403
+2025-07-09 15:12:56,550 - Model - INFO - Training accuracy: 0.813291
+2025-07-09 15:12:56,551 - Model - INFO - ---- EPOCH 018 EVALUATION ----
+2025-07-09 15:13:02,099 - Model - INFO - eval mean loss: 1.165591
+2025-07-09 15:13:02,099 - Model - INFO - eval point avg class IoU: 0.261856
+2025-07-09 15:13:02,099 - Model - INFO - eval point accuracy: 0.522083
+2025-07-09 15:13:02,099 - Model - INFO - eval point avg class acc: 0.424533
+2025-07-09 15:13:02,099 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.619 
+class Stem   weight: 0.255, IoU: 0.057 
+class Canopy weight: 0.038, IoU: 0.263 
+class Roots  weight: 0.317, IoU: 0.371 
+class Objects weight: 0.383, IoU: 0.000 
+
+2025-07-09 15:13:02,100 - Model - INFO - Eval mean loss: 1.165591
+2025-07-09 15:13:02,100 - Model - INFO - Eval accuracy: 0.522083
+2025-07-09 15:13:02,100 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:13:02,100 - Model - INFO - **** Epoch 19 (19/24) ****
+2025-07-09 15:13:02,100 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:13:11,386 - Model - INFO - Training mean loss: 0.497171
+2025-07-09 15:13:11,386 - Model - INFO - Training accuracy: 0.818549
+2025-07-09 15:13:11,387 - Model - INFO - ---- EPOCH 019 EVALUATION ----
+2025-07-09 15:13:16,941 - Model - INFO - eval mean loss: 1.057686
+2025-07-09 15:13:16,941 - Model - INFO - eval point avg class IoU: 0.313284
+2025-07-09 15:13:16,941 - Model - INFO - eval point accuracy: 0.586517
+2025-07-09 15:13:16,941 - Model - INFO - eval point avg class acc: 0.450136
+2025-07-09 15:13:16,941 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.653 
+class Stem   weight: 0.255, IoU: 0.062 
+class Canopy weight: 0.038, IoU: 0.317 
+class Roots  weight: 0.317, IoU: 0.534 
+class Objects weight: 0.383, IoU: 0.000 
+
+2025-07-09 15:13:16,941 - Model - INFO - Eval mean loss: 1.057686
+2025-07-09 15:13:16,941 - Model - INFO - Eval accuracy: 0.586517
+2025-07-09 15:13:16,941 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:13:16,941 - Model - INFO - **** Epoch 20 (20/24) ****
+2025-07-09 15:13:16,941 - Model - INFO - Learning rate:0.000700
+2025-07-09 15:13:26,239 - Model - INFO - Training mean loss: 0.499400
+2025-07-09 15:13:26,239 - Model - INFO - Training accuracy: 0.819691
+2025-07-09 15:13:26,240 - Model - INFO - ---- EPOCH 020 EVALUATION ----
+2025-07-09 15:13:31,646 - Model - INFO - eval mean loss: 1.101236
+2025-07-09 15:13:31,646 - Model - INFO - eval point avg class IoU: 0.295408
+2025-07-09 15:13:31,646 - Model - INFO - eval point accuracy: 0.561937
+2025-07-09 15:13:31,646 - Model - INFO - eval point avg class acc: 0.432214
+2025-07-09 15:13:31,646 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.639 
+class Stem   weight: 0.255, IoU: 0.057 
+class Canopy weight: 0.038, IoU: 0.253 
+class Roots  weight: 0.318, IoU: 0.528 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:13:31,646 - Model - INFO - Eval mean loss: 1.101236
+2025-07-09 15:13:31,646 - Model - INFO - Eval accuracy: 0.561937
+2025-07-09 15:13:31,646 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:13:31,646 - Model - INFO - **** Epoch 21 (21/24) ****
+2025-07-09 15:13:31,646 - Model - INFO - Learning rate:0.000490
+2025-07-09 15:13:40,794 - Model - INFO - Training mean loss: 0.499609
+2025-07-09 15:13:40,795 - Model - INFO - Training accuracy: 0.816989
+2025-07-09 15:13:40,795 - Model - INFO - Save model...
+2025-07-09 15:13:40,795 - Model - INFO - Saving at pointnet2_sem_seg/checkpoints/model_2025-07-09_15-08.pth
+2025-07-09 15:13:40,821 - Model - INFO - Saving model....
+2025-07-09 15:13:40,822 - Model - INFO - ---- EPOCH 021 EVALUATION ----
+2025-07-09 15:13:46,220 - Model - INFO - eval mean loss: 1.228752
+2025-07-09 15:13:46,220 - Model - INFO - eval point avg class IoU: 0.274050
+2025-07-09 15:13:46,220 - Model - INFO - eval point accuracy: 0.540679
+2025-07-09 15:13:46,220 - Model - INFO - eval point avg class acc: 0.408649
+2025-07-09 15:13:46,220 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.550 
+class Stem   weight: 0.255, IoU: 0.056 
+class Canopy weight: 0.038, IoU: 0.236 
+class Roots  weight: 0.317, IoU: 0.529 
+class Objects weight: 0.383, IoU: 0.000 
+
+2025-07-09 15:13:46,220 - Model - INFO - Eval mean loss: 1.228752
+2025-07-09 15:13:46,220 - Model - INFO - Eval accuracy: 0.540679
+2025-07-09 15:13:46,220 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:13:46,221 - Model - INFO - **** Epoch 22 (22/24) ****
+2025-07-09 15:13:46,221 - Model - INFO - Learning rate:0.000490
+2025-07-09 15:13:55,355 - Model - INFO - Training mean loss: 0.491392
+2025-07-09 15:13:55,356 - Model - INFO - Training accuracy: 0.817905
+2025-07-09 15:13:55,356 - Model - INFO - ---- EPOCH 022 EVALUATION ----
+2025-07-09 15:14:00,749 - Model - INFO - eval mean loss: 1.133694
+2025-07-09 15:14:00,749 - Model - INFO - eval point avg class IoU: 0.295650
+2025-07-09 15:14:00,749 - Model - INFO - eval point accuracy: 0.569464
+2025-07-09 15:14:00,749 - Model - INFO - eval point avg class acc: 0.431253
+2025-07-09 15:14:00,749 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.579 
+class Stem   weight: 0.255, IoU: 0.062 
+class Canopy weight: 0.038, IoU: 0.318 
+class Roots  weight: 0.318, IoU: 0.519 
+class Objects weight: 0.382, IoU: 0.000 
+
+2025-07-09 15:14:00,749 - Model - INFO - Eval mean loss: 1.133694
+2025-07-09 15:14:00,749 - Model - INFO - Eval accuracy: 0.569464
+2025-07-09 15:14:00,749 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:14:00,749 - Model - INFO - **** Epoch 23 (23/24) ****
+2025-07-09 15:14:00,749 - Model - INFO - Learning rate:0.000490
+2025-07-09 15:14:09,897 - Model - INFO - Training mean loss: 0.481498
+2025-07-09 15:14:09,897 - Model - INFO - Training accuracy: 0.824974
+2025-07-09 15:14:09,898 - Model - INFO - ---- EPOCH 023 EVALUATION ----
+2025-07-09 15:14:15,318 - Model - INFO - eval mean loss: 1.100103
+2025-07-09 15:14:15,318 - Model - INFO - eval point avg class IoU: 0.311378
+2025-07-09 15:14:15,318 - Model - INFO - eval point accuracy: 0.586329
+2025-07-09 15:14:15,318 - Model - INFO - eval point avg class acc: 0.447752
+2025-07-09 15:14:15,318 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.658 
+class Stem   weight: 0.256, IoU: 0.062 
+class Canopy weight: 0.038, IoU: 0.312 
+class Roots  weight: 0.318, IoU: 0.525 
+class Objects weight: 0.381, IoU: 0.000 
+
+2025-07-09 15:14:15,318 - Model - INFO - Eval mean loss: 1.100103
+2025-07-09 15:14:15,318 - Model - INFO - Eval accuracy: 0.586329
+2025-07-09 15:14:15,318 - Model - INFO - Best mIoU: 0.320246
+2025-07-09 15:14:15,318 - Model - INFO - **** Epoch 24 (24/24) ****
+2025-07-09 15:14:15,318 - Model - INFO - Learning rate:0.000490
+2025-07-09 15:14:24,470 - Model - INFO - Training mean loss: 0.474690
+2025-07-09 15:14:24,470 - Model - INFO - Training accuracy: 0.832993
+2025-07-09 15:14:24,471 - Model - INFO - ---- EPOCH 024 EVALUATION ----
+2025-07-09 15:14:29,934 - Model - INFO - eval mean loss: 1.031128
+2025-07-09 15:14:29,934 - Model - INFO - eval point avg class IoU: 0.317124
+2025-07-09 15:14:29,934 - Model - INFO - eval point accuracy: 0.587686
+2025-07-09 15:14:29,934 - Model - INFO - eval point avg class acc: 0.464641
+2025-07-09 15:14:29,934 - Model - INFO - ------- IoU --------
+class Ground weight: 0.007, IoU: 0.679 
+class Stem   weight: 0.255, IoU: 0.069 
+class Canopy weight: 0.038, IoU: 0.319 
+class Roots  weight: 0.318, IoU: 0.519 
+class Objects weight: 0.383, IoU: 0.000 
+
+2025-07-09 15:14:29,934 - Model - INFO - Eval mean loss: 1.031128
+2025-07-09 15:14:29,934 - Model - INFO - Eval accuracy: 0.587686
+2025-07-09 15:14:29,934 - Model - INFO - Best mIoU: 0.320246

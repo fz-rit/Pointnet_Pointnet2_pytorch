@@ -124,6 +124,8 @@ def create_train_parser(config: Config) -> argparse.ArgumentParser:
                        help='Validation split ratio')
     parser.add_argument('--random_seed', type=int, default=config.get('data.random_seed'),
                        help='Random seed for reproducible splits')
+    parser.add_argument('--feat_group', type=str, default=config.get('data.feat_group', 'xyz'),
+                       help='Feature group to use (e.g., "xyz", "xyzi0")')
     
     # Hardware arguments
     parser.add_argument('--gpu', type=str, default=config.get('hardware.gpu'), 
@@ -187,3 +189,4 @@ if __name__ == "__main__":
     print(f"Model name: {config.get('model.name')}")
     print(f"Number of classes: {config.get('model.num_classes')}")
     print(f"Data root: {config.get('data.root_dir')}")
+    print(f"Feature group: {config.get('data.feat_group')}")

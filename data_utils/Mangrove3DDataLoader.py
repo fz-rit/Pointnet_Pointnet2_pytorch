@@ -196,7 +196,6 @@ class Mangrove3DDataset(Dataset, BaseMangrove3DDataset):
         normalized_points = selected_points
         
         current_labels = labels[selected_idxs]
-        
         if self.transform:
             normalized_points, current_labels = self.transform(normalized_points, current_labels)
         
@@ -314,7 +313,7 @@ def main():
         'block_size': 40, 
         'num_class': 5, 
         'sample_rate': 0.1, 
-        'feat_group': "xyz",
+        'feat_group': "xyzi0",
         'val_ratio': 0.25,  # 25% for validation
         'random_seed': 42   # For reproducible splits
     }

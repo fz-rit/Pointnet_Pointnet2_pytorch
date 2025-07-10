@@ -56,8 +56,9 @@ def setup_logging(log_dir: Path, model_name: str):
 
 def setup_directories(args):
     """Setup experiment directories."""
-    timestr = datetime.datetime.now().strftime('%Y-%m-%d')
-    exp_dir = Path(args.log_dir) if args.log_dir else Path('./log/sem_seg/') / timestr
+    # timestr = datetime.datetime.now().strftime('%Y-%m-%d')
+
+    exp_dir = Path(args.log_dir) if args.log_dir else Path('./log/sem_seg/') / args.feat_group
     exp_dir.mkdir(exist_ok=True)
     
     dirs = {
@@ -69,7 +70,7 @@ def setup_directories(args):
     for dir_path in dirs.values():
         dir_path.mkdir(exist_ok=True)
     
-    return dirs, timestr
+    return dirs
 
 
 def create_data_loaders(args, config):
@@ -81,6 +82,7 @@ def create_data_loaders(args, config):
         'sample_rate': config.get('training.sample_rate'),
         'num_class': config.get('model.num_classes'),
         'transform': None,
+        'feat_group': config.get('data.feat_group', 'xyz'),  # Default to 'xyz'
         'val_ratio': config.get('data.val_ratio'),
         'random_seed': config.get('data.random_seed')
     }
@@ -312,8 +314,9 @@ def main(args, config):
     os.environ["CUDA_VISIBLE_DEVICES"] = config.get('hardware.gpu')
     
     # Setup directories and logging
-    dirs, timestr = setup_directories(args)
+    dirs = setup_directories(args)
     logger = setup_logging(dirs['logs'], config.get('model.name'))
+    feature_group = config.get('data.feat_group', 'xyz')
     
     def log_string(s):
         logger.info(s)
@@ -365,13 +368,13 @@ def main(args, config):
         # Save checkpoint periodically
         save_interval = config.get('logging.save_interval')
         if epoch % save_interval == 0:
-            save_path = dirs['checkpoints'] / f'model_{timestr}_epoch_{epoch}.pth'
+            save_path = dirs['checkpoints'] / f'model_{feature_group}_epoch_{epoch}.pth'
             save_checkpoint(classifier, optimizer, epoch, mIoU, save_path, logger)
         
         # Save best model
         if mIoU >= best_iou:
             best_iou = mIoU
-            save_path = dirs['checkpoints'] / f'best_model_{timestr}.pth'
+            save_path = dirs['checkpoints'] / f'best_model_{feature_group}.pth'
             save_checkpoint(classifier, optimizer, epoch, mIoU, save_path, logger)
         
         log_string(f'Best mIoU so far: {best_iou:.6f}')

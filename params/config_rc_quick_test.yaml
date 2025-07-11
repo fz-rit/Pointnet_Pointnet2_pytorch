@@ -22,7 +22,7 @@ training:
 # Data Configuration
 data:
   root_dir: "/home/fzhcis/data/mangrove3d_pcd/temp_test"
-  val_ratio: 0.1  # 10% for validation
+  val_ratio: 0.5  # 50% for validation
   random_seed: 42
   feat_group: ["xyz"]  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3 (single string or list)
   num_workers: 4

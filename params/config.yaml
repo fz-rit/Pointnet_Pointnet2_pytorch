@@ -24,7 +24,7 @@ data:
   root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024/previous/temp_0709"
   val_ratio: 0.25  # 25% for validation
   random_seed: 42
-  feat_group: ["xyz", "xyzi0", "xyz_p3"]  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3 (single string or list)
+  feat_group: ["xyz_irz_n3"]  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3 (single string or list)
   num_workers: 10
 
 # Testing Parameters

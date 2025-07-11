@@ -22,13 +22,20 @@ FEATURE_MAP = {
     "xyz_irz": 6,
     "xyz_p3": 6,
     "xyz_cap": 6,
-    "xyz_n3": 6
+    "xyz_n3": 6,
+    "xyz_rgb": 6,
+    "xyz_irz_n3": 9,
+    "xyz_n3_cap": 9,
+    "xyz_irz_n3_cap": 12,
+    "xyz_irz_n3_cap_p3": 15
 }
 
 
 def get_input_channels(feat_group: str) -> int:
     """Get number of input channels based on feature group."""
-    return FEATURE_MAP.get(feat_group, 3)
+    if feat_group not in FEATURE_MAP:
+        raise ValueError(f"Unknown feature group: {feat_group}. Available options: {list(FEATURE_MAP.keys())}")
+    return FEATURE_MAP[feat_group]
 
 
 def setup_environment(gpu_id: str):

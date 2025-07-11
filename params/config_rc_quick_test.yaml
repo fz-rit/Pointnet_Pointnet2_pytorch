@@ -1,0 +1,62 @@
+# Mangrove3D Point Cloud Segmentation Configuration
+# This file contains all parameters for training and testing
+
+# Model Configuration
+model:
+  name: "pointnet2_sem_seg"
+  num_classes: 5
+  npoint: 4096
+  block_size: 4.0
+
+# Training Parameters
+training:
+  batch_size: 32
+  learning_rate: 0.005
+  min_learning_rate: 0.0001
+  epochs: 1
+  optimizer: "Adam"
+  decay_rate: 0.0001  # Changed from 1e-4 to avoid string parsing issues
+  step_size: 10
+  sample_rate: 1.0
+
+# Data Configuration
+data:
+  root_dir: "/home/fzhcis/data/mangrove3d_pcd/temp_test"
+  val_ratio: 0.1  # 10% for validation
+  random_seed: 42
+  feat_group: ["xyz"]  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3 (single string or list)
+  num_workers: 4
+
+# Testing Parameters
+testing:
+  batch_size: 32
+  block_points: 4096
+  num_votes: 3
+  test_idx: -1  # Set to -1 to test all available files, or >=0 for specific file index
+  visual: true
+  # model_path and output_dir are auto-generated based on training settings
+  # model_path: auto-generated as {log_dir}/checkpoints/best_model_{feat_group}.pth
+  # output_dir: auto-generated as {data.root_dir}/test_results
+
+# Hardware Configuration
+hardware:
+  gpu: "0"
+  pin_memory: true
+  drop_last: true
+
+# Logging Configuration
+logging:
+  log_dir: null  # If null, will use timestamp-based directory
+  save_interval: 20  # Save checkpoint every N epochs
+
+# Class Configuration
+classes:
+  names: ["Ground", "Stem", "Canopy", "Roots", "Objects"]
+  colors: [[128, 0, 128], [165, 42, 42], [0, 128, 0], [255, 165, 0], [255, 255, 0]]
+
+# Paths (relative to project root)
+paths:
+  models_dir: "models"
+  log_dir: "log/sem_seg"
+  checkpoints_dir: "checkpoints"
+  results_dir: "results"

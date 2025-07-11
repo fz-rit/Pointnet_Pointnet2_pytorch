@@ -6,7 +6,7 @@ model:
   name: "pointnet2_sem_seg"
   num_classes: 5
   npoint: 4096
-  block_size: 2.0  # Test multiple block sizes
+  block_size: 2.0
 
 # Training Parameters
 training:
@@ -25,7 +25,7 @@ data:
   val_ratio: 0.25  # 25% for validation
   random_seed: 42
   feat_group: ["xyz", "xyzi0", "xyz_p3", "xyz_irz", "xyz_cap", "xyz_n3"]  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3 (single string or list)
-  num_workers: 8
+  num_workers: 4
 
 # Testing Parameters
 testing:

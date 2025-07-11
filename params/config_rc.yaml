@@ -6,33 +6,33 @@ model:
   name: "pointnet2_sem_seg"
   num_classes: 5
   npoint: 4096
-  block_size: 2.0
+  block_size: 2.0  # Test multiple block sizes
 
 # Training Parameters
 training:
   batch_size: 32
-  learning_rate: 0.01
+  learning_rate: 0.005
   min_learning_rate: 0.0001
-  epochs: 40
+  epochs: 50
   optimizer: "Adam"
-  decay_rate: 1e-4
+  decay_rate: 0.0001  # Changed from 1e-4 to avoid string parsing issues
   step_size: 10
   sample_rate: 1.0
 
 # Data Configuration
 data:
   root_dir: "/home/fzhcis/data/mangrove3d_pcd"
-  val_ratio: 0.1  # 10% for validation
+  val_ratio: 0.25  # 25% for validation
   random_seed: 42
-  feat_group: "xyzi0"  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3
-  num_workers: 10
+  feat_group: ["xyz", "xyzi0", "xyz_p3", "xyz_irz", "xyz_cap", "xyz_n3"]  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3 (single string or list)
+  num_workers: 8
 
 # Testing Parameters
 testing:
   batch_size: 32
   block_points: 4096
   num_votes: 3
-  test_idx: 0  # Set to -1 to test all available files, or >=0 for specific file index
+  test_idx: -1  # Set to -1 to test all available files, or >=0 for specific file index
   visual: true
   # model_path and output_dir are auto-generated based on training settings
   # model_path: auto-generated as {log_dir}/checkpoints/best_model_{feat_group}.pth

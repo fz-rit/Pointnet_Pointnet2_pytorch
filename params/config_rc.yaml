@@ -6,7 +6,7 @@ model:
   name: "pointnet2_sem_seg"
   num_classes: 5
   npoint: 4096
-  block_size: 40.0
+  block_size: 2.0
 
 # Training Parameters
 training:
@@ -29,7 +29,7 @@ data:
 
 # Testing Parameters
 testing:
-  batch_size: 16
+  batch_size: 32
   block_points: 4096
   num_votes: 3
   test_idx: 0  # Set to -1 to test all available files, or >=0 for specific file index

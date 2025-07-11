@@ -1,52 +1,31 @@
 """
-Configuration and argument parsing utilities for training and testing.
+Configuration utilities for training and testing.
+Simplified to use only YAML configuration files.
 """
 
-from typing import Tuple
-import argparse
-from params.config_loader import load_config, create_train_parser, create_test_parser
+from typing import Optional
+from params.config_loader import load_config
 from common_utils import auto_configure_testing_paths
 
 
-def parse_train_args() -> Tuple[argparse.Namespace, object]:
-    """Parse command line arguments for training using YAML configuration."""
-    # Load default configuration
-    config = load_config()
+def load_train_config(config_path: Optional[str] = None):
+    """Load training configuration from YAML file."""
+    if config_path is None:
+        # Use default config path
+        config_path = 'params/config.yaml'
     
-    # Create parser with config defaults
-    parser = create_train_parser(config)
-    args = parser.parse_args()
-    
-    # Update config with command line arguments
-    if args.config:
-        config = load_config(args.config)
-        config.update_from_args(args)
-    else:
-        config.update_from_args(args)
-    
-    # Add config object to args for easy access
-    args.config = config
-    
-    return args, config
+    return load_config(config_path)
 
 
-def parse_test_args() -> Tuple[argparse.Namespace, object]:
-    """Parse command line arguments for testing using YAML configuration."""
-    # Load default configuration
-    config = load_config()
+def load_test_config(config_path: Optional[str] = None):
+    """Load testing configuration from YAML file with auto-configured paths."""
+    if config_path is None:
+        # Use default test config path
+        config_path = 'params/config.yaml'
     
-    # Create parser with config defaults
-    parser = create_test_parser(config)
-    args = parser.parse_args()
-    
-    # Update config with command line arguments
-    if args.config:
-        config = load_config(args.config)
-        config.update_from_args(args)
-    else:
-        config.update_from_args(args)
+    config = load_config(config_path)
     
     # Auto-configure testing paths based on training settings
     auto_configure_testing_paths(config)
     
-    return args, config
+    return config

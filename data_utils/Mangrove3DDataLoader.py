@@ -105,7 +105,16 @@ class BaseMangrove3DDataset:
     
     def load_points_labels(self, pcd_path: Path, label_path: Path) -> Tuple[np.ndarray, np.ndarray]:
         """Load and validate points and labels."""
-        points = pd.read_csv(pcd_path).loc[:, self.pts_col_names].to_numpy()
+        df = pd.read_csv(pcd_path)
+        
+        # Validate that all required columns exist
+        missing_cols = [col for col in self.pts_col_names if col not in df.columns]
+        if missing_cols:
+            available_cols = list(df.columns)
+            raise ValueError(f"Missing required columns {missing_cols} in {pcd_path}. "
+                           f"Available columns: {available_cols}")
+        
+        points = df.loc[:, self.pts_col_names].to_numpy()
         labels = convert_labels(np.loadtxt(label_path, dtype=int))
         assert points.shape[0] == len(labels), f"Size mismatch: {points.shape[0]} vs {len(labels)}"
         return points, labels
@@ -293,7 +302,12 @@ class Mangrove3DTestDataset(BaseMangrove3DDataset):
                 index_batches.append(point_idxs)
         
         if not data_batches:
-            return np.array([]), np.array([]), np.array([]), np.array([])
+            # Return empty arrays with proper shapes
+            num_features = len(self.pts_col_names)
+            return (np.empty((0, self.block_points, num_features)), 
+                   np.empty((0, self.block_points)), 
+                   np.empty((0, self.block_points)), 
+                   np.empty((0, self.block_points), dtype=int))
         
         # Concatenate and reshape
         data_scan = np.vstack(data_batches).reshape((-1, self.block_points, data_batches[0].shape[1]))

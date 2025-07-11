@@ -6,30 +6,30 @@ model:
   name: "pointnet2_sem_seg"
   num_classes: 5
   npoint: 4096
-  block_size: [2.0, 5.0, 10.0]  # Test multiple block sizes
+  block_size: 2.0  # Test multiple block sizes
 
 # Training Parameters
 training:
   batch_size: 32
   learning_rate: 0.005
   min_learning_rate: 0.0001
-  epochs: 40
+  epochs: 10
   optimizer: "Adam"
-  decay_rate: 1e-4
+  decay_rate: 0.0001  # Changed from 1e-4 to avoid string parsing issues
   step_size: 10
   sample_rate: 1.0
 
 # Data Configuration
 data:
-  root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024"
-  val_ratio: 0.1  # 10% for validation
+  root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024/previous/temp_0709"
+  val_ratio: 0.25  # 25% for validation
   random_seed: 42
   feat_group: "xyzi0"  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3
   num_workers: 10
 
 # Testing Parameters
 testing:
-  batch_size: 16
+  batch_size: 32
   block_points: 4096
   num_votes: 3
   test_idx: -1  # Set to -1 to test all available files, or >=0 for specific file index

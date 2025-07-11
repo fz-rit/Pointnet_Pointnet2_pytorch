@@ -187,6 +187,14 @@ def create_optimizer(model: torch.nn.Module, config) -> torch.optim.Optimizer:
     learning_rate = config.get('training.learning_rate')
     decay_rate = config.get('training.decay_rate')
     
+    # Ensure decay_rate is a float (handle both string and numeric from YAML)
+    if isinstance(decay_rate, str):
+        decay_rate = float(decay_rate)
+    
+    # Ensure learning_rate is a float
+    if isinstance(learning_rate, str):
+        learning_rate = float(learning_rate)
+    
     if optimizer_name == 'Adam':
         optimizer = torch.optim.Adam(
             model.parameters(),
@@ -205,12 +213,11 @@ def create_optimizer(model: torch.nn.Module, config) -> torch.optim.Optimizer:
     return optimizer
 
 
-def log_experiment_info(args, config, logger: logging.Logger):
+def log_experiment_info(config, logger: logging.Logger):
     """Log experiment configuration and parameters."""
     logger.info('=' * 60)
     logger.info('EXPERIMENT CONFIGURATION')
     logger.info('=' * 60)
-    logger.info(f'Arguments: {vars(args)}')
     logger.info(f'Model: {config.get("model.name")}')
     logger.info(f'Feature group: {config.get("data.feat_group")}')
     logger.info(f'Number of classes: {config.get("model.num_classes")}')
@@ -301,9 +308,14 @@ def auto_configure_testing_paths(config):
     Args:
         config: Configuration object to update
     """
-    # Auto-generate model path
-    model_path = get_best_model_path(config)
-    config.set('testing.model_path', str(model_path))
+    # Check if block_size is a list (sensitivity testing mode)
+    block_size_param = config.get('model.block_size')
+    
+    if not isinstance(block_size_param, list):
+        # Auto-generate model path only for single block size
+        model_path = get_best_model_path(config)
+        config.set('testing.model_path', str(model_path))
+    # For list block sizes, model paths are handled separately in the test script
     
     # Auto-generate output directory
     output_dir = get_test_output_dir(config)

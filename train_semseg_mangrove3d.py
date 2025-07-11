@@ -1,4 +1,3 @@
-import argparse
 import datetime
 import logging
 import numpy as np
@@ -12,8 +11,7 @@ from tqdm import tqdm
 from tools import save_and_plot_loss_accuracy
 import provider
 from data_utils.Mangrove3DDataLoader import Mangrove3DDataset
-from params.config_loader import load_config, create_train_parser
-from config_utils import parse_train_args
+from config_utils import load_train_config
 from common_utils import (
     setup_environment, create_model, apply_model_optimizations, 
     load_checkpoint, save_checkpoint, setup_basic_logging,
@@ -23,8 +21,8 @@ import math
 
 
 def parse_args():
-    """Parse command line arguments using YAML configuration."""
-    return parse_train_args()
+    """Load configuration from YAML file."""
+    return load_train_config()
 
 
 def setup_logging(log_dir: Path, model_name: str):
@@ -32,7 +30,7 @@ def setup_logging(log_dir: Path, model_name: str):
     return setup_basic_logging(log_dir / f'{model_name}.txt', "Model")
 
 
-def setup_directories(args, config):
+def setup_directories(config):
     """Setup experiment directories."""
     from common_utils import get_experiment_dir
     
@@ -51,7 +49,7 @@ def setup_directories(args, config):
     return dirs
 
 
-def create_data_loaders(args, config):
+def create_data_loaders(config):
     """Create training and validation data loaders."""
     dataset_config = {
         'data_root': config.get('data.root_dir'),
@@ -86,7 +84,7 @@ def create_data_loaders(args, config):
     return train_loader, val_loader, train_dataset.labelweights
 
 
-def setup_model_and_optimizer(args, config):
+def setup_model_and_optimizer(config):
     """Setup model, criterion, and optimizer."""
     classifier, criterion = create_model(config, for_training=True)
     
@@ -103,13 +101,13 @@ def setup_model_and_optimizer(args, config):
         print('No pretrained model found, starting from scratch...')
         # Weight initialization is handled in load_checkpoint when it fails
     
-    # Setup optimizer
+    # Setup optimizer - use the passed config (which might be config_copy)
     optimizer = create_optimizer(classifier, config)
     
     return classifier, criterion, optimizer, start_epoch
 
 
-def train_epoch(classifier, criterion, optimizer, train_loader, weights, args, config, logger):
+def train_epoch(classifier, criterion, optimizer, train_loader, weights, config, logger):
     """Train for one epoch."""
     classifier.train()
     total_correct = total_seen = loss_sum = 0
@@ -151,7 +149,7 @@ def train_epoch(classifier, criterion, optimizer, train_loader, weights, args, c
     return train_loss, train_acc
 
 
-def validate_epoch(classifier, criterion, val_loader, weights, args, config, logger):
+def validate_epoch(classifier, criterion, val_loader, weights, config, logger):
     """Validate for one epoch."""
     classifier.eval()
     total_correct = total_seen = loss_sum = 0
@@ -207,16 +205,6 @@ def validate_epoch(classifier, criterion, val_loader, weights, args, config, log
     return val_loss, val_acc, mIoU
 
 
-# def update_learning_rate(optimizer, epoch, config):
-#     """Update learning rate with decay."""
-#     learning_rate = config.get('training.learning_rate')
-#     lr_decay = config.get('training.lr_decay')
-#     step_size = config.get('training.step_size')
-    
-#     lr = max(learning_rate * (lr_decay ** (epoch // step_size)), 1e-5)
-#     for param_group in optimizer.param_groups:
-#         param_group['lr'] = lr
-#     return lr
 
 
 def update_learning_rate(optimizer, epoch, config):
@@ -224,6 +212,11 @@ def update_learning_rate(optimizer, epoch, config):
     initial_lr = config.get('training.learning_rate')  # η_max
     min_lr = config.get('training.min_learning_rate', 1e-5)  # η_min
     total_epochs = config.get('training.epochs', 100)  # T_max
+    
+    # Ensure all values are floats/ints
+    initial_lr = float(initial_lr) if not isinstance(initial_lr, (int, float)) else initial_lr
+    min_lr = float(min_lr) if not isinstance(min_lr, (int, float)) else min_lr
+    total_epochs = int(total_epochs) if not isinstance(total_epochs, int) else total_epochs
     
     # Cosine annealing formula
     lr = min_lr + 0.5 * (initial_lr - min_lr) * (1 + math.cos(math.pi * epoch / total_epochs))
@@ -253,7 +246,7 @@ def save_checkpoint_wrapper(classifier, optimizer, epoch, mIoU, save_path, logge
     save_checkpoint(classifier, optimizer, epoch, metrics, save_path, logger)
 
 
-def main(args, config):
+def main(config):
     """Main training function with block size sensitivity support."""
     # Setup environment
     setup_environment(config.get('hardware.gpu'))
@@ -277,16 +270,15 @@ def main(args, config):
             print(f"{'='*60}")
             
             try:
-                best_iou, model_path = train_single_block_size(args, config, block_size)
+                best_iou, model_path = train_single_block_size(config, block_size)
                 results[block_size] = best_iou
                 model_paths[block_size] = model_path
                 
                 print(f"✓ Block size {block_size:.1f}m completed. Best mIoU: {best_iou:.6f}")
                 
             except Exception as e:
-                print(f"✗ Block size {block_size:.1f}m failed: {str(e)}")
-                results[block_size] = None
-                model_paths[block_size] = None
+                raise ValueError(f"✗ Block size {block_size:.1f}m failed: {str(e)}")
+
         
         # Print summary
         print(f"\n{'='*80}")
@@ -340,9 +332,9 @@ def main(args, config):
     else:
         # Single block size - original behavior
         print(f"Training single model with block size: {block_size_param:.1f}m")
-        train_single_block_size(args, config, block_size_param)
+        train_single_block_size(config, block_size_param)
 
-def train_single_block_size(args, config, block_size):
+def train_single_block_size(config, block_size):
     """Train a model with a specific block size."""
     from common_utils import get_experiment_dir, get_model_name_with_block_size
     
@@ -353,6 +345,47 @@ def train_single_block_size(args, config, block_size):
     # Create a modified config for this specific block size
     config_copy = config.copy()
     config_copy.set('model.block_size', block_size)
+    
+    # Verify that critical parameters are properly copied
+    original_epochs = config.get('training.epochs')
+    if config_copy.get('training.epochs') != original_epochs:
+        print(f"WARNING: Epochs mismatch! Fixing copied config epochs from {config_copy.get('training.epochs')} to {original_epochs}")
+        config_copy.set('training.epochs', original_epochs)
+    
+    # Verify other critical parameters and ensure proper types
+    critical_params = [
+        'training.batch_size', 'training.learning_rate', 'model.num_classes',
+        'data.feat_group', 'model.npoint', 'data.root_dir', 'training.decay_rate'
+    ]
+    for param in critical_params:
+        original_val = config.get(param)
+        copied_val = config_copy.get(param)
+        if original_val != copied_val:
+            print(f"WARNING: Parameter {param} mismatch! Fixing: {copied_val} -> {original_val}")
+            config_copy.set(param, original_val)
+    
+    # Ensure numeric parameters are properly typed
+    numeric_params = {
+        'training.learning_rate': float,
+        'training.decay_rate': float,
+        'training.min_learning_rate': float,
+        'training.batch_size': int,
+        'training.epochs': int,
+        'model.num_classes': int,
+        'model.npoint': int,
+        'data.val_ratio': float,
+        'data.random_seed': int
+    }
+    
+    for param, param_type in numeric_params.items():
+        value = config_copy.get(param)
+        if value is not None and not isinstance(value, param_type):
+            try:
+                typed_value = param_type(value)
+                config_copy.set(param, typed_value)
+                print(f"INFO: Converted {param} from {type(value).__name__} to {param_type.__name__}: {value} -> {typed_value}")
+            except (ValueError, TypeError) as e:
+                print(f"WARNING: Could not convert {param} to {param_type.__name__}: {e}")
     
     # Setup directories for this specific block size
     exp_dir = get_experiment_dir(config_copy, block_size)
@@ -375,13 +408,14 @@ def train_single_block_size(args, config, block_size):
         print(s)
     
     # Log experiment info
-    log_experiment_info(args, config_copy, logger)
+    log_experiment_info(config_copy, logger)
     
     # Log training setup
     logger.info("=" * 60)
     logger.info("TRAINING SETUP")
     logger.info("=" * 60)
     logger.info(f"Block size: {block_size:.1f}m")
+    logger.info(f"Epochs: {config_copy.get('training.epochs')}")  # Debug: Log epochs
     logger.info(f"Experiment directory: {dirs['experiment']}")
     logger.info(f"Checkpoints will be saved to: {dirs['checkpoints']}")
     logger.info("=" * 60)
@@ -393,14 +427,14 @@ def train_single_block_size(args, config, block_size):
     
     # Create data loaders
     log_string("Loading datasets...")
-    train_loader, val_loader, labelweights = create_data_loaders(args, config_copy)
+    train_loader, val_loader, labelweights = create_data_loaders(config_copy)
     weights = torch.Tensor(labelweights).cuda()
     
     log_string(f"Training samples: {len(train_loader.dataset)}")
     log_string(f"Validation samples: {len(val_loader.dataset)}")
     
     # Setup model
-    classifier, criterion, optimizer, start_epoch = setup_model_and_optimizer(args, config_copy)
+    classifier, criterion, optimizer, start_epoch = setup_model_and_optimizer(config_copy)
     
     # Training loop
     best_iou = 0
@@ -418,8 +452,8 @@ def train_single_block_size(args, config, block_size):
         log_string(f'Learning rate: {lr:.6f}, BN momentum: {momentum:.6f}')
         
         # Train and validate
-        train_loss, train_acc = train_epoch(classifier, criterion, optimizer, train_loader, weights, args, config_copy, logger)
-        val_loss, val_acc, mIoU = validate_epoch(classifier, criterion, val_loader, weights, args, config_copy, logger)
+        train_loss, train_acc = train_epoch(classifier, criterion, optimizer, train_loader, weights, config_copy, logger)
+        val_loss, val_acc, mIoU = validate_epoch(classifier, criterion, val_loader, weights, config_copy, logger)
         
         # Track metrics
         train_losses.append(train_loss)
@@ -452,5 +486,5 @@ def train_single_block_size(args, config, block_size):
     return best_iou, dirs['checkpoints'] / get_model_name_with_block_size(config_copy, block_size)
 
 if __name__ == '__main__':
-    args, config = parse_args()
-    main(args, config)
+    config = parse_args()
+    main(config)

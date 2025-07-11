@@ -1,4 +1,3 @@
-import argparse
 import datetime
 import logging
 import numpy as np
@@ -9,12 +8,11 @@ import time
 import torch
 from pathlib import Path
 from tqdm import tqdm
-from typing import Tuple, Dict, Any
+from typing import Dict, Any, Tuple
 
 from data_utils.Mangrove3DDataLoader import Mangrove3DTestDataset
 from tools import calc_metrics, write_eval_metrics_to_file
-from params.config_loader import load_config, create_test_parser
-from config_utils import parse_test_args
+from config_utils import load_test_config
 from common_utils import (
     setup_environment, create_model, load_checkpoint, 
     setup_basic_logging, setup_console_logging, log_experiment_info
@@ -23,9 +21,9 @@ from common_utils import (
 # COLOR_MAP = np.array([[128, 0, 128], [165, 42, 42], [0, 128, 0], [255, 165, 0], [255, 255, 0]])
 
 
-def parse_args() -> Tuple[argparse.Namespace, object]:
-    """Parse command line arguments using YAML configuration."""
-    return parse_test_args()
+def parse_args():
+    """Load configuration from YAML file."""
+    return load_test_config()
 
 
 def setup_logging(output_dir: Path) -> logging.Logger:
@@ -36,6 +34,9 @@ def setup_logging(output_dir: Path) -> logging.Logger:
 
 def load_model(model_path: Path, config) -> torch.nn.Module:
     """Load trained model from checkpoint."""
+    if not model_path.exists():
+        raise FileNotFoundError(f"Model checkpoint not found: {model_path}")
+    
     model, _ = create_model(config, for_training=False)
     load_checkpoint(model, model_path, for_training=False)
     return model.eval()
@@ -192,7 +193,11 @@ def _add_votes(vote_pool: np.ndarray, point_idx: np.ndarray, pred_label: np.ndar
     for b in range(batch_size):
         for n in range(num_points):
             if weights[b, n] != 0 and not np.isinf(weights[b, n]):
-                vote_pool[int(point_idx[b, n]), int(pred_label[b, n])] += 1
+                idx = int(point_idx[b, n])
+                label = int(pred_label[b, n])
+                # Add bounds checking to prevent index errors
+                if 0 <= idx < vote_pool.shape[0] and 0 <= label < vote_pool.shape[1]:
+                    vote_pool[idx, label] += 1
 
 
 def evaluate_predictions(pred_labels: np.ndarray, gt_labels: np.ndarray, config, logger: logging.Logger) -> Dict[str, Any]:
@@ -252,7 +257,7 @@ def save_visualization(scene_data: np.ndarray, pred_labels: np.ndarray,
     logger.info(f"Visualization saved to: {output_path}")
 
 
-def test_single_block_size(args, config, block_size, model_path):
+def test_single_block_size(config, block_size, model_path):
     """Test a model with a specific block size."""
     print(f"\n{'='*80}")
     print(f"TESTING MODEL WITH BLOCK SIZE: {block_size:.1f}m")
@@ -272,7 +277,7 @@ def test_single_block_size(args, config, block_size, model_path):
     output_dir.mkdir(parents=True, exist_ok=True)
     
     logger = setup_logging(output_dir)
-    log_experiment_info(args, config_copy, logger)
+    log_experiment_info(config_copy, logger)
     
     # Log auto-generated paths
     logger.info("=" * 60)
@@ -318,7 +323,7 @@ def test_single_block_size(args, config, block_size, model_path):
 def main():
     """Main testing function with block size sensitivity support."""
     start_time = time.time()
-    args, config = parse_args()
+    config = parse_args()
     
     # Check if block_size is a list (sensitivity testing) or single value
     block_size_param = config.get('model.block_size')
@@ -353,7 +358,7 @@ def main():
                 print(f"{'='*60}")
                 
                 try:
-                    mIoU = test_single_block_size(args, config, block_size, model_path)
+                    mIoU = test_single_block_size(config, block_size, model_path)
                     test_results[block_size] = mIoU
                     print(f"✓ Block size {block_size:.1f}m completed. mIoU: {mIoU:.6f}")
                     
@@ -423,7 +428,7 @@ def main():
         output_dir.mkdir(exist_ok=True)
         
         logger = setup_logging(output_dir)
-        log_experiment_info(args, config, logger)
+        log_experiment_info(config, logger)
         
         # Log auto-generated paths
         logger.info("=" * 60)

@@ -1,21 +1,21 @@
-# Mangrove3D Point Cloud Segmentation Configuration
-# This file contains all parameters for training and testing
+# Feature Group Sensitivity Testing Configuration
+# This config tests multiple feature groups to find the optimal one
 
 # Model Configuration
 model:
   name: "pointnet2_sem_seg"
   num_classes: 5
   npoint: 4096
-  block_size: 2.0  # Test multiple block sizes
+  block_size: 2.0
 
 # Training Parameters
 training:
   batch_size: 32
   learning_rate: 0.005
   min_learning_rate: 0.0001
-  epochs: 3
+  epochs: 5  # Reduced for faster sensitivity testing
   optimizer: "Adam"
-  decay_rate: 0.0001  # Changed from 1e-4 to avoid string parsing issues
+  decay_rate: 0.0001
   step_size: 10
   sample_rate: 1.0
 
@@ -24,7 +24,7 @@ data:
   root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024/previous/temp_0709"
   val_ratio: 0.25  # 25% for validation
   random_seed: 42
-  feat_group: ["xyz", "xyzi0", "xyz_p3"]  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3 (single string or list)
+  feat_group: ["xyz", "xyzi0", "xyz_p3"]  # List of feature groups to test
   num_workers: 10
 
 # Testing Parameters
@@ -32,11 +32,8 @@ testing:
   batch_size: 32
   block_points: 4096
   num_votes: 3
-  test_idx: -1  # Set to -1 to test all available files, or >=0 for specific file index
+  test_idx: -1  # Test all files
   visual: true
-  # model_path and output_dir are auto-generated based on training settings
-  # model_path: auto-generated as {log_dir}/checkpoints/best_model_{feat_group}.pth
-  # output_dir: auto-generated as {data.root_dir}/test_results
 
 # Hardware Configuration
 hardware:
@@ -46,8 +43,8 @@ hardware:
 
 # Logging Configuration
 logging:
-  log_dir: null  # If null, will use timestamp-based directory
-  save_interval: 20  # Save checkpoint every N epochs
+  log_dir: null  # Will be auto-generated with feature group info
+  save_interval: 5  # Save more frequently for shorter experiments
 
 # Class Configuration
 classes:

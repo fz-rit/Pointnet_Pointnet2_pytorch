@@ -53,6 +53,10 @@ def create_model(config, for_training: bool = True) -> Tuple[torch.nn.Module, to
     
     # Determine input channels based on feature group
     feat_group = config.get('data.feat_group', 'xyz')
+    # Handle list case - should be single value when creating model
+    if isinstance(feat_group, list):
+        feat_group = feat_group[0]
+    
     input_channels = get_input_channels(feat_group)
     
     model = MODEL.get_model(num_classes, input_channels=input_channels).cuda()
@@ -239,6 +243,10 @@ def get_experiment_dir(config, block_size=None) -> Path:
     log_dir = config.get('logging.log_dir')
     feat_group = config.get('data.feat_group', 'xyz')
     
+    # Normalize feat_group to string if it's a list
+    if isinstance(feat_group, list):
+        feat_group = feat_group[0]  # Use first one for directory naming
+    
     # Handle block size for sensitivity testing
     if block_size is not None:
         block_suffix = f"_blk{block_size:.1f}"
@@ -271,6 +279,10 @@ def get_best_model_path(config, block_size=None) -> Path:
     """
     exp_dir = get_experiment_dir(config, block_size)
     feat_group = config.get('data.feat_group', 'xyz')
+    
+    # Normalize feat_group to string if it's a list
+    if isinstance(feat_group, list):
+        feat_group = feat_group[0]
     
     if block_size is not None:
         model_name = f'best_model_{feat_group}_blk{block_size:.1f}.pth'
@@ -308,14 +320,17 @@ def auto_configure_testing_paths(config):
     Args:
         config: Configuration object to update
     """
-    # Check if block_size is a list (sensitivity testing mode)
-    block_size_param = config.get('model.block_size')
+    # Get feature group (should be single value for testing individual models)
+    feat_group = config.get('data.feat_group', 'xyz')
+    if isinstance(feat_group, list):
+        # Should have been set to single value by test_single_feat_group
+        feat_group = feat_group[0] if feat_group else 'xyz'
     
-    if not isinstance(block_size_param, list):
-        # Auto-generate model path only for single block size
-        model_path = get_best_model_path(config)
-        config.set('testing.model_path', str(model_path))
-    # For list block sizes, model paths are handled separately in the test script
+    # Auto-generate model path
+    exp_dir = get_experiment_dir(config)
+    model_name = f'best_model_{feat_group}.pth'
+    model_path = exp_dir / 'checkpoints' / model_name
+    config.set('testing.model_path', str(model_path))
     
     # Auto-generate output directory
     output_dir = get_test_output_dir(config)

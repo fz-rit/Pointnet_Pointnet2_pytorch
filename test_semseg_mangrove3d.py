@@ -321,157 +321,111 @@ def test_single_block_size(config, block_size, model_path):
 
 
 def main():
-    """Main testing function with block size sensitivity support."""
+    """Main testing function with feature group sensitivity support."""
     start_time = time.time()
     config = parse_args()
     
-    # Check if block_size is a list (sensitivity testing) or single value
-    block_size_param = config.get('model.block_size')
+    # Get feature groups to test (normalize to list)
+    feat_groups = config.get('data.feat_group')
+    if isinstance(feat_groups, str):
+        feat_groups = [feat_groups]
     
-    if isinstance(block_size_param, list):
-        # Multiple block sizes - sensitivity testing
+    if len(feat_groups) > 1:
+        # Multiple feature groups - run sensitivity testing
         print(f"\n{'='*80}")
-        print(f"BLOCK SIZE SENSITIVITY TESTING")
-        print(f"Testing block sizes: {block_size_param}")
+        print(f"FEATURE GROUP SENSITIVITY TESTING")
+        print(f"Testing feature groups: {feat_groups}")
         print(f"{'='*80}")
         
-        # Load the block size sensitivity results to find model paths
-        results_path = Path('./log/sem_seg/block_size_sensitivity_results.json')
-        if not results_path.exists():
-            print(f"Error: Sensitivity results file not found: {results_path}")
-            print("Please run training with block size sensitivity first.")
-            return
-        
-        import json
-        with open(results_path, 'r') as f:
-            sensitivity_data = json.load(f)
-        
-        test_results = {}
-        
-        for block_size in block_size_param:
-            block_size_str = str(block_size)
-            if block_size_str in sensitivity_data['model_paths'] and sensitivity_data['model_paths'][block_size_str]:
-                model_path = sensitivity_data['model_paths'][block_size_str]
-                
-                print(f"\n{'='*60}")
-                print(f"Testing block size: {block_size:.1f}m")
-                print(f"{'='*60}")
-                
-                try:
-                    mIoU = test_single_block_size(config, block_size, model_path)
-                    test_results[block_size] = mIoU
-                    print(f"✓ Block size {block_size:.1f}m completed. mIoU: {mIoU:.6f}")
-                    
-                except Exception as e:
-                    print(f"✗ Block size {block_size:.1f}m failed: {str(e)}")
-                    test_results[block_size] = None
-            else:
-                print(f"✗ No trained model found for block size {block_size:.1f}m")
-                test_results[block_size] = None
+        results = {}
+        for feat_group in feat_groups:
+            print(f"\n{'='*60}")
+            print(f"Testing feature group: {feat_group}")
+            print(f"{'='*60}")
+            
+            try:
+                mIoU = test_single_feat_group(config, feat_group)
+                results[feat_group] = mIoU
+                print(f"✓ Feature group {feat_group} completed. mIoU: {mIoU:.6f}")
+            except Exception as e:
+                print(f"✗ Feature group {feat_group} failed: {str(e)}")
+                results[feat_group] = None
         
         # Print summary
         print(f"\n{'='*80}")
-        print(f"BLOCK SIZE SENSITIVITY TEST RESULTS")
+        print(f"FEATURE GROUP TEST RESULTS")
         print(f"{'='*80}")
-        print(f"{'Block Size (m)':<15} {'Training mIoU':<15} {'Test mIoU':<12}")
-        print("-" * 80)
+        print(f"{'Feature Group':<15} {'mIoU'}")
+        print("-" * 25)
         
-        best_test_block_size = None
-        best_test_iou = 0
-        
-        for block_size in block_size_param:
-            train_iou = sensitivity_data['results'].get(str(block_size))
-            test_iou = test_results[block_size]
-            
-            train_str = f"{train_iou:.6f}" if train_iou else "FAILED"
-            test_str = f"{test_iou:.6f}" if test_iou else "FAILED"
-            
-            print(f"{block_size:<15.1f} {train_str:<15} {test_str:<12}")
-            
-            if test_iou is not None and test_iou > best_test_iou:
-                best_test_iou = test_iou
-                best_test_block_size = block_size
-        
-        print("-" * 80)
-        if best_test_block_size is not None:
-            print(f"Best test performance: Block size {best_test_block_size:.1f}m with mIoU {best_test_iou:.6f}")
+        valid_results = {k: v for k, v in results.items() if v is not None}
+        if valid_results:
+            best_feat_group = max(valid_results, key=valid_results.get)
+            for feat_group, iou in results.items():
+                if iou is not None:
+                    marker = " ← BEST" if feat_group == best_feat_group else ""
+                    print(f"{feat_group:<15} {iou:.6f}{marker}")
+                else:
+                    print(f"{feat_group:<15} FAILED")
+            print(f"\nBest feature group: {best_feat_group} with mIoU {valid_results[best_feat_group]:.6f}")
         else:
-            print("All block size tests failed!")
-        
-        # Save test results summary
-        test_summary_path = Path('./log/sem_seg/block_size_test_results.json')
-        test_summary_data = {
-            'block_sizes': block_size_param,
-            'train_results': sensitivity_data['results'],
-            'test_results': {str(k): v for k, v in test_results.items()},
-            'best_train_block_size': sensitivity_data.get('best_block_size'),
-            'best_train_iou': sensitivity_data.get('best_iou'),
-            'best_test_block_size': best_test_block_size,
-            'best_test_iou': best_test_iou,
-            'feat_group': config.get('data.feat_group'),
-            'npoint': config.get('model.npoint'),
-            'timestamp': datetime.datetime.now().isoformat()
-        }
-        
-        with open(test_summary_path, 'w') as f:
-            json.dump(test_summary_data, f, indent=2)
-        
-        print(f"\nTest results summary saved to: {test_summary_path}")
-        
+            print("All feature group tests failed!")
+    
     else:
-        # Single block size - original behavior
-        print(f"Testing single model with block size: {block_size_param:.1f}m")
-        
-        # Setup environment and directories
-        setup_environment(config.get('hardware.gpu'))
-        output_dir = Path(config.get('testing.output_dir'))
-        output_dir.mkdir(exist_ok=True)
-        
-        logger = setup_logging(output_dir)
-        log_experiment_info(config, logger)
-        
-        # Log auto-generated paths
-        logger.info("=" * 60)
-        logger.info("AUTO-GENERATED PATHS")
-        logger.info("=" * 60)
-        logger.info(f"Model path: {config.get('testing.model_path')}")
-        logger.info(f"Output directory: {config.get('testing.output_dir')}")
-        logger.info("=" * 60)
-        
-        # Load dataset and model
-        dataset = Mangrove3DTestDataset(
-            data_root=config.get('data.root_dir'),
-            split='test',
-            feat_group=config.get('data.feat_group'),
-            block_points=config.get('testing.block_points'),
-            num_class=config.get('model.num_classes'),
-            block_size=config.get('model.block_size') 
-        )
-        logger.info(f"Loaded test dataset with {len(dataset)} files")
-        
-        model = load_model(Path(config.get('testing.model_path')), config)
-        logger.info(f"Loaded model from: {config.get('testing.model_path')}")
-        
-        # Run inference
-        metrics = run_inference(
-            model, dataset, config.get('testing.test_idx'), config.get('testing.batch_size'),
-            config.get('testing.num_votes'), config, logger, output_dir
-        )
-        
-        elapsed_time = time.time() - start_time
-        logger.info(f"Testing completed in {elapsed_time:.2f} seconds")
-        logger.info(f"Final mIoU: {metrics['mean_iou']:.4f}")
-        
-        # Log summary based on test mode
-        test_idx = config.get('testing.test_idx')
-        if test_idx == -1:
-            logger.info(f"Processed ALL {len(dataset)} test files")
-            logger.info("Check individual file results in the output directory")
-        else:
-            logger.info(f"Processed single test file (index {test_idx})")
+        # Single feature group - original behavior
+        feat_group = feat_groups[0]
+        print(f"Testing single model with feature group: {feat_group}")
+        test_single_feat_group(config, feat_group)
     
     elapsed_time = time.time() - start_time
     print(f"\nTotal testing time: {elapsed_time:.2f} seconds")
+
+
+def test_single_feat_group(config, feat_group):
+    """Test a model with a specific feature group."""
+    # Create config copy with the specific feature group
+    config_copy = config.copy()
+    config_copy.set('data.feat_group', feat_group)
+    
+    # Setup environment and auto-configure paths
+    setup_environment(config_copy.get('hardware.gpu'))
+    from common_utils import auto_configure_testing_paths
+    auto_configure_testing_paths(config_copy)
+    
+    # Setup output directory
+    output_dir = Path(config_copy.get('testing.output_dir'))
+    output_dir.mkdir(exist_ok=True)
+    
+    # Setup logging
+    logger = setup_logging(output_dir)
+    log_experiment_info(config_copy, logger)
+    logger.info(f"Testing with feature group: {feat_group}")
+    
+    # Load model and dataset
+    model_path = config_copy.get('testing.model_path')
+    logger.info(f"Loading model from: {model_path}")
+    
+    model = load_model(Path(model_path), config_copy)
+    
+    dataset = Mangrove3DTestDataset(
+        data_root=config_copy.get('data.root_dir'),
+        split='test',
+        feat_group=feat_group,
+        block_points=config_copy.get('testing.block_points'),
+        num_class=config_copy.get('model.num_classes'),
+        block_size=config_copy.get('model.block_size')
+    )
+    
+    logger.info(f"Loaded test dataset with {len(dataset)} files")
+    
+    # Run inference
+    metrics = run_inference(
+        model, dataset, config_copy.get('testing.test_idx'), config_copy.get('testing.batch_size'),
+        config_copy.get('testing.num_votes'), config_copy, logger, output_dir
+    )
+    
+    logger.info(f"Testing completed for {feat_group}. mIoU: {metrics['mean_iou']:.4f}")
+    return metrics['mean_iou']
 
 
 if __name__ == '__main__':

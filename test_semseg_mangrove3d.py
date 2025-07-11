@@ -259,67 +259,67 @@ def save_visualization(scene_data: np.ndarray, gt_labels: np.ndarray, pred_label
     logger.info(f"Visualization saved to: {output_path}")
 
 
-def test_single_block_size(config, block_size, model_path):
-    """Test a model with a specific block size."""
-    print(f"\n{'='*80}")
-    print(f"TESTING MODEL WITH BLOCK SIZE: {block_size:.1f}m")
-    print(f"Model: {model_path}")
-    print(f"{'='*80}")
+# def test_single_block_size(config, block_size, model_path):
+#     """Test a model with a specific block size."""
+#     print(f"\n{'='*80}")
+#     print(f"TESTING MODEL WITH BLOCK SIZE: {block_size:.1f}m")
+#     print(f"Model: {model_path}")
+#     print(f"{'='*80}")
     
-    # Create a modified config for this specific block size
-    config_copy = config.copy()
-    config_copy.set('model.block_size', block_size)
+#     # Create a modified config for this specific block size
+#     config_copy = config.copy()
+#     config_copy.set('model.block_size', block_size)
     
-    # Setup environment and directories
-    setup_environment(config_copy.get('hardware.gpu'))
+#     # Setup environment and directories
+#     setup_environment(config_copy.get('hardware.gpu'))
     
-    # Create output directory for this block size
-    base_output_dir = Path(config_copy.get('data.root_dir')) / 'test_results'
-    output_dir = base_output_dir / f"blk{block_size:.1f}"
-    output_dir.mkdir(parents=True, exist_ok=True)
+#     # Create output directory for this block size
+#     base_output_dir = Path(config_copy.get('data.root_dir')) / 'test_results'
+#     output_dir = base_output_dir / f"blk{block_size:.1f}"
+#     output_dir.mkdir(parents=True, exist_ok=True)
     
-    logger = setup_logging(output_dir)
-    log_experiment_info(config_copy, logger)
+#     logger = setup_logging(output_dir)
+#     log_experiment_info(config_copy, logger)
     
-    # Log auto-generated paths
-    logger.info("=" * 60)
-    logger.info("BLOCK SIZE TESTING")
-    logger.info("=" * 60)
-    logger.info(f"Block size: {block_size:.1f}m")
-    logger.info(f"Model path: {model_path}")
-    logger.info(f"Output directory: {output_dir}")
-    logger.info("=" * 60)
+#     # Log auto-generated paths
+#     logger.info("=" * 60)
+#     logger.info("BLOCK SIZE TESTING")
+#     logger.info("=" * 60)
+#     logger.info(f"Block size: {block_size:.1f}m")
+#     logger.info(f"Model path: {model_path}")
+#     logger.info(f"Output directory: {output_dir}")
+#     logger.info("=" * 60)
     
-    # Load dataset and model
-    dataset = Mangrove3DTestDataset(
-        data_root=config_copy.get('data.root_dir'),
-        split='test',
-        feat_group=config_copy.get('data.feat_group'),
-        block_points=config_copy.get('testing.block_points'),
-        num_class=config_copy.get('model.num_classes'),
-        block_size=block_size  # Use the specific block size
-    )
-    logger.info(f"Loaded test dataset with {len(dataset)} files")
+#     # Load dataset and model
+#     dataset = Mangrove3DTestDataset(
+#         data_root=config_copy.get('data.root_dir'),
+#         split='test',
+#         feat_group=config_copy.get('data.feat_group'),
+#         block_points=config_copy.get('testing.block_points'),
+#         num_class=config_copy.get('model.num_classes'),
+#         block_size=block_size  # Use the specific block size
+#     )
+#     logger.info(f"Loaded test dataset with {len(dataset)} files")
     
-    if not Path(model_path).exists():
-        error_msg = f"Model file not found: {model_path}"
-        logger.error(error_msg)
-        print(f"✗ {error_msg}")
-        return None
+#     if not Path(model_path).exists():
+#         error_msg = f"Model file not found: {model_path}"
+#         logger.error(error_msg)
+#         print(f"✗ {error_msg}")
+#         return None
     
-    model = load_model(Path(model_path), config_copy)
-    logger.info(f"Loaded model from: {model_path}")
+#     model = load_model(Path(model_path), config_copy)
+#     logger.info(f"Loaded model from: {model_path}")
     
-    # Run inference
-    metrics = run_inference(
-        model, dataset, config_copy.get('testing.test_idx'), config_copy.get('testing.batch_size'),
-        config_copy.get('testing.num_votes'), config_copy, logger, output_dir
-    )
+#     # Run inference
+#     metrics = run_inference(
+#         model, dataset, config_copy.get('testing.test_idx'), config_copy.get('testing.batch_size'),
+#         config_copy.get('testing.num_votes'), config_copy, logger, output_dir
+#     )
     
-    logger.info(f"Testing completed for block size {block_size:.1f}m")
-    logger.info(f"Final mIoU: {metrics['mean_iou']:.4f}")
+#     logger.info(f"Testing completed for block size {block_size:.1f}m")
+#     logger.info(f"Final mIoU: {metrics['mean_iou']:.4f}")
     
-    return metrics['mean_iou']
+#     return metrics['mean_iou']
 
 
 def main():
@@ -395,7 +395,7 @@ def test_single_feat_group(config, feat_group):
     auto_configure_testing_paths(config_copy)
     
     # Setup output directory
-    output_dir = Path(config_copy.get('testing.output_dir'))
+    output_dir = Path(config_copy.get('testing.output_dir')) / feat_group
     output_dir.mkdir(exist_ok=True)
     
     # Setup logging

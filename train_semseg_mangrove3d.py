@@ -1,4 +1,3 @@
-
 import argparse
 import datetime
 import logging
@@ -255,85 +254,202 @@ def save_checkpoint_wrapper(classifier, optimizer, epoch, mIoU, save_path, logge
 
 
 def main(args, config):
-    """Main training function."""
+    """Main training function with block size sensitivity support."""
     # Setup environment
     setup_environment(config.get('hardware.gpu'))
     
-    # Setup directories and logging
-    dirs = setup_directories(args, config)
-    logger = setup_logging(dirs['logs'], config.get('model.name'))
+    # Check if block_size is a list (sensitivity testing) or single value
+    block_size_param = config.get('model.block_size')
     
-    # Log experiment info
-    log_experiment_info(args, config, logger)
+    if isinstance(block_size_param, list):
+        # Multiple block sizes - sensitivity testing
+        print(f"\n{'='*80}")
+        print(f"BLOCK SIZE SENSITIVITY TESTING")
+        print(f"Testing block sizes: {block_size_param}")
+        print(f"{'='*80}")
+        
+        results = {}
+        model_paths = {}
+        
+        for block_size in block_size_param:
+            print(f"\n{'='*60}")
+            print(f"Training with block size: {block_size:.1f}m")
+            print(f"{'='*60}")
+            
+            try:
+                best_iou, model_path = train_single_block_size(args, config, block_size)
+                results[block_size] = best_iou
+                model_paths[block_size] = model_path
+                
+                print(f"✓ Block size {block_size:.1f}m completed. Best mIoU: {best_iou:.6f}")
+                
+            except Exception as e:
+                print(f"✗ Block size {block_size:.1f}m failed: {str(e)}")
+                results[block_size] = None
+                model_paths[block_size] = None
+        
+        # Print summary
+        print(f"\n{'='*80}")
+        print(f"BLOCK SIZE SENSITIVITY RESULTS")
+        print(f"{'='*80}")
+        print(f"{'Block Size (m)':<15} {'Best mIoU':<12} {'Model Path'}")
+        print("-" * 80)
+        
+        best_overall_block_size = None
+        best_overall_iou = 0
+        
+        for block_size in block_size_param:
+            iou = results[block_size]
+            model_path = model_paths[block_size]
+            
+            if iou is not None:
+                print(f"{block_size:<15.1f} {iou:<12.6f} {model_path}")
+                if iou > best_overall_iou:
+                    best_overall_iou = iou
+                    best_overall_block_size = block_size
+            else:
+                print(f"{block_size:<15.1f} {'FAILED':<12} {'N/A'}")
+        
+        print("-" * 80)
+        if best_overall_block_size is not None:
+            print(f"Best overall: Block size {best_overall_block_size:.1f}m with mIoU {best_overall_iou:.6f}")
+        else:
+            print("All block size experiments failed!")
+        
+        # Save results summary
+        import json
+        summary_path = Path('./log/sem_seg/block_size_sensitivity_results.json')
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        summary_data = {
+            'block_sizes': block_size_param,
+            'results': {str(k): v for k, v in results.items()},
+            'model_paths': {str(k): str(v) if v else None for k, v in model_paths.items()},
+            'best_block_size': best_overall_block_size,
+            'best_iou': best_overall_iou,
+            'feat_group': config.get('data.feat_group'),
+            'npoint': config.get('model.npoint'),
+            'timestamp': datetime.datetime.now().isoformat()
+        }
+        
+        with open(summary_path, 'w') as f:
+            json.dump(summary_data, f, indent=2)
+        
+        print(f"\nResults summary saved to: {summary_path}")
+        
+    else:
+        # Single block size - original behavior
+        print(f"Training single model with block size: {block_size_param:.1f}m")
+        train_single_block_size(args, config, block_size_param)
+
+def train_single_block_size(args, config, block_size):
+    """Train a model with a specific block size."""
+    from common_utils import get_experiment_dir, get_model_name_with_block_size
     
-    # Log training setup
-    logger.info("=" * 60)
-    logger.info("TRAINING SETUP")
-    logger.info("=" * 60)
-    logger.info(f"Experiment directory: {dirs['experiment']}")
-    logger.info(f"Checkpoints will be saved to: {dirs['checkpoints']}")
-    logger.info("=" * 60)
+    print(f"\n{'='*80}")
+    print(f"TRAINING MODEL WITH BLOCK SIZE: {block_size:.1f}m")
+    print(f"{'='*80}")
+    
+    # Create a modified config for this specific block size
+    config_copy = config.copy()
+    config_copy.set('model.block_size', block_size)
+    
+    # Setup directories for this specific block size
+    exp_dir = get_experiment_dir(config_copy, block_size)
+    exp_dir.mkdir(parents=True, exist_ok=True)
+    
+    dirs = {
+        'experiment': exp_dir,
+        'checkpoints': exp_dir / 'checkpoints',
+        'logs': exp_dir / 'logs'
+    }
+    
+    for dir_path in dirs.values():
+        dir_path.mkdir(exist_ok=True)
+    
+    # Setup logging
+    logger = setup_logging(dirs['logs'], config_copy.get('model.name'))
     
     def log_string(s):
         logger.info(s)
         print(s)
     
+    # Log experiment info
+    log_experiment_info(args, config_copy, logger)
+    
+    # Log training setup
+    logger.info("=" * 60)
+    logger.info("TRAINING SETUP")
+    logger.info("=" * 60)
+    logger.info(f"Block size: {block_size:.1f}m")
+    logger.info(f"Experiment directory: {dirs['experiment']}")
+    logger.info(f"Checkpoints will be saved to: {dirs['checkpoints']}")
+    logger.info("=" * 60)
+    
     # Copy model files
-    model_name = config.get('model.name')
+    model_name = config_copy.get('model.name')
     shutil.copy(f'models/{model_name}.py', dirs['experiment'])
     shutil.copy('models/pointnet2_utils.py', dirs['experiment'])
     
     # Create data loaders
     log_string("Loading datasets...")
-    train_loader, val_loader, labelweights = create_data_loaders(args, config)
+    train_loader, val_loader, labelweights = create_data_loaders(args, config_copy)
     weights = torch.Tensor(labelweights).cuda()
     
     log_string(f"Training samples: {len(train_loader.dataset)}")
     log_string(f"Validation samples: {len(val_loader.dataset)}")
     
     # Setup model
-    classifier, criterion, optimizer, start_epoch = setup_model_and_optimizer(args, config)
+    classifier, criterion, optimizer, start_epoch = setup_model_and_optimizer(args, config_copy)
     
     # Training loop
     best_iou = 0
     train_losses, val_losses = [], []
     train_accs, val_accs = [], []
-    feature_group = config.get('data.feat_group', 'xyz')
+    feature_group = config_copy.get('data.feat_group', 'xyz')
     
-    num_epochs = config.get('training.epochs')
+    num_epochs = config_copy.get('training.epochs')
     for epoch in range(start_epoch, num_epochs):
         log_string(f'Epoch {epoch + 1}/{num_epochs}')
         
         # Update learning rate and momentum
-        lr = update_learning_rate(optimizer, epoch, config)
-        momentum = update_bn_momentum(classifier, epoch, config)
-        log_string(f'Learning rate: {lr:.6f}, BN momentum: {momentum:.3f}')
+        lr = update_learning_rate(optimizer, epoch, config_copy)
+        momentum = update_bn_momentum(classifier, epoch, config_copy)
+        log_string(f'Learning rate: {lr:.6f}, BN momentum: {momentum:.6f}')
         
         # Train and validate
-        train_loss, train_acc = train_epoch(classifier, criterion, optimizer, train_loader, weights, args, config, logger)
-        val_loss, val_acc, mIoU = validate_epoch(classifier, criterion, val_loader, weights, args, config, logger)
-
-        # Log losses and accuracies (convert tensors to float for plotting)
-        train_losses.append(float(train_loss.cpu()) if hasattr(train_loss, 'cpu') else train_loss)
-        val_losses.append(float(val_loss.cpu()) if hasattr(val_loss, 'cpu') else val_loss)
+        train_loss, train_acc = train_epoch(classifier, criterion, optimizer, train_loader, weights, args, config_copy, logger)
+        val_loss, val_acc, mIoU = validate_epoch(classifier, criterion, val_loader, weights, args, config_copy, logger)
+        
+        # Track metrics
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
         train_accs.append(train_acc)
         val_accs.append(val_acc)
-
-        # Save checkpoint periodically
-        save_interval = config.get('logging.save_interval')
-        if epoch % save_interval == 0:
-            save_path = dirs['checkpoints'] / f'model_{feature_group}_epoch_{epoch}.pth'
-            save_checkpoint_wrapper(classifier, optimizer, epoch, mIoU, save_path, logger)
         
         # Save best model
         if mIoU >= best_iou:
             best_iou = mIoU
-            save_path = dirs['checkpoints'] / f'best_model_{feature_group}.pth'
-            save_checkpoint_wrapper(classifier, optimizer, epoch, mIoU, save_path, logger)
+            model_name = get_model_name_with_block_size(config_copy, block_size)
+            save_path = dirs['checkpoints'] / model_name
+            
+            save_checkpoint(classifier, optimizer, epoch, 
+                          {'mIoU': mIoU, 'accuracy': val_acc}, save_path, logger)
+            log_string(f'Best model saved with mIoU: {best_iou:.6f}')
         
-        log_string(f'Best mIoU so far: {best_iou:.6f}')
-
+        # Save checkpoint at intervals
+        if (epoch + 1) % config_copy.get('logging.save_interval') == 0:
+            checkpoint_path = dirs['checkpoints'] / f'checkpoint_epoch_{epoch+1:03d}_blk{block_size:.1f}.pth'
+            save_checkpoint(classifier, optimizer, epoch, 
+                          {'mIoU': mIoU, 'accuracy': val_acc}, checkpoint_path, logger)
+    
+    # Save final plots
     save_and_plot_loss_accuracy(train_losses, val_losses, train_accs, val_accs, dirs['experiment'])
+    
+    log_string(f'Training completed for block size {block_size:.1f}m')
+    log_string(f'Best mIoU achieved: {best_iou:.6f}')
+    
+    return best_iou, dirs['checkpoints'] / get_model_name_with_block_size(config_copy, block_size)
 
 if __name__ == '__main__':
     args, config = parse_args()

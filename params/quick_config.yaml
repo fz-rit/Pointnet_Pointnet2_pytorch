@@ -33,7 +33,7 @@ testing:
   batch_size: 16
   block_points: 2048
   num_votes: 1  # Single vote for speed
-  test_idx: 0
+  test_idx: 0  # Set to -1 to test all available files, or >=0 for specific file index
   visual: true
   # model_path and output_dir are auto-generated based on training settings
   # model_path: auto-generated as {log_dir}/checkpoints/best_model_{feat_group}.pth

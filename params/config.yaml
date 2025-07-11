@@ -6,12 +6,12 @@ model:
   name: "pointnet2_sem_seg"
   num_classes: 5
   npoint: 4096
-  block_size: 40.0
+  block_size: [2.0, 5.0, 10.0]  # Test multiple block sizes
 
 # Training Parameters
 training:
   batch_size: 32
-  learning_rate: 0.01
+  learning_rate: 0.005
   min_learning_rate: 0.0001
   epochs: 40
   optimizer: "Adam"
@@ -32,7 +32,7 @@ testing:
   batch_size: 16
   block_points: 4096
   num_votes: 3
-  test_idx: 0
+  test_idx: -1  # Set to -1 to test all available files, or >=0 for specific file index
   visual: true
   # model_path and output_dir are auto-generated based on training settings
   # model_path: auto-generated as {log_dir}/checkpoints/best_model_{feat_group}.pth

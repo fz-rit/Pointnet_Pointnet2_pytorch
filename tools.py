@@ -2,7 +2,7 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 from typing import Tuple
 import matplotlib.pyplot as plt
-
+from pathlib import Path
 def calc_metrics(true_flat: np.ndarray, 
                  pred_flat: np.ndarray, 
                  num_classes: int) -> Tuple[np.ndarray, float, float, float, float, float]:
@@ -90,3 +90,18 @@ def save_and_plot_loss_accuracy(train_losses, val_losses, train_accs, val_accs, 
     plt.close()
 
     print(f"Loss_accuracy_plot saved to {save_dir / 'loss_accuracy_plot.png'}")
+
+
+def write_eval_metrics_to_file(eval_metrics: dict, out_dir: Path, key_str:str=''):
+    """
+    Write evaluation metrics to a text file.
+    
+    Args:
+        eval_metrics (dict): Dictionary containing evaluation metrics.
+        out_dir (Path): Directory to save the metrics file.
+    """
+    metrics_path = out_dir / f"eval_metrics_{key_str}.txt"
+    with open(metrics_path, 'w') as f:
+        for key, value in eval_metrics.items():
+            f.write(f"{key}: {value}\n")
+    print(f"Evaluation metrics saved to {metrics_path}")

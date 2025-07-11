@@ -1,5 +1,5 @@
-# Mangrove3D Point Cloud Segmentation Configuration
-# This file contains all parameters for training and testing
+# Mangrove3D Point Cloud Segmentation - Test All Files Configuration
+# This configuration is optimized for testing all available files
 
 # Model Configuration
 model:
@@ -8,7 +8,7 @@ model:
   npoint: 4096
   block_size: 40.0
 
-# Training Parameters
+# Training Parameters (not used for testing but required for consistency)
 training:
   batch_size: 32
   learning_rate: 0.01
@@ -21,19 +21,19 @@ training:
 
 # Data Configuration
 data:
-  root_dir: "/home/fzhcis/data/mangrove3d_pcd"
+  root_dir: "/home/fzhcis/mylab/data/point_cloud_segmentation/palau_2024"
   val_ratio: 0.1  # 10% for validation
   random_seed: 42
   feat_group: "xyzi0"  # Options: xyz, xyzi0, xyz_irz, xyz_p3, xyz_cap, xyz_n3
   num_workers: 10
 
-# Testing Parameters
+# Testing Parameters - Configured for ALL files
 testing:
   batch_size: 16
   block_points: 4096
   num_votes: 3
-  test_idx: 0  # Set to -1 to test all available files, or >=0 for specific file index
-  visual: true
+  test_idx: -1  # -1 means test ALL available files
+  visual: true  # Save visualizations for all files
   # model_path and output_dir are auto-generated based on training settings
   # model_path: auto-generated as {log_dir}/checkpoints/best_model_{feat_group}.pth
   # output_dir: auto-generated as {data.root_dir}/test_results
@@ -46,7 +46,7 @@ hardware:
 
 # Logging Configuration
 logging:
-  log_dir: null  # If null, will use timestamp-based directory
+  log_dir: null  # If null, will use feature group as directory name
   save_interval: 20  # Save checkpoint every N epochs
 
 # Class Configuration

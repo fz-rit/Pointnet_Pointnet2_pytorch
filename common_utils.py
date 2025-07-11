@@ -218,12 +218,13 @@ def log_experiment_info(args, config, logger: logging.Logger):
     logger.info('=' * 60)
 
 
-def get_experiment_dir(config) -> Path:
+def get_experiment_dir(config, block_size=None) -> Path:
     """
     Get the experiment directory based on logging configuration.
     
     Args:
         config: Configuration object
+        block_size: Optional specific block size for naming (for sensitivity testing)
         
     Returns:
         Path to experiment directory
@@ -231,26 +232,52 @@ def get_experiment_dir(config) -> Path:
     log_dir = config.get('logging.log_dir')
     feat_group = config.get('data.feat_group', 'xyz')
     
+    # Handle block size for sensitivity testing
+    if block_size is not None:
+        block_suffix = f"_blk{block_size:.1f}"
+    else:
+        # Check if block_size is a list (sensitivity testing mode)
+        model_block_size = config.get('model.block_size')
+        if isinstance(model_block_size, list):
+            block_suffix = "_sensitivity"
+        else:
+            block_suffix = f"_blk{model_block_size:.1f}"
+    
     if log_dir:
-        return Path(log_dir)
+        base_dir = Path(log_dir)
+        return base_dir.parent / (base_dir.name + block_suffix) if block_size is not None or isinstance(model_block_size, list) else base_dir
     else:
         # Use feature group as directory name when log_dir is null
-        return Path('./log/sem_seg') / feat_group
+        return Path('./log/sem_seg') / (feat_group + block_suffix)
 
 
-def get_best_model_path(config) -> Path:
+def get_best_model_path(config, block_size=None) -> Path:
     """
     Generate the best model path based on training configuration.
     
     Args:
         config: Configuration object
+        block_size: Optional specific block size for naming (for sensitivity testing)
         
     Returns:
         Path to the best model checkpoint
     """
-    exp_dir = get_experiment_dir(config)
+    exp_dir = get_experiment_dir(config, block_size)
     feat_group = config.get('data.feat_group', 'xyz')
-    return exp_dir / 'checkpoints' / f'best_model_{feat_group}.pth'
+    
+    if block_size is not None:
+        model_name = f'best_model_{feat_group}_blk{block_size:.1f}.pth'
+    else:
+        # Check if block_size is a list (sensitivity testing mode)
+        model_block_size = config.get('model.block_size')
+        if isinstance(model_block_size, list):
+            # For sensitivity testing, we can't auto-determine which model to use
+            # This should be handled differently by the caller
+            raise ValueError("Cannot auto-generate model path when block_size is a list. Use specific block_size parameter.")
+        else:
+            model_name = f'best_model_{feat_group}_blk{model_block_size:.1f}.pth'
+    
+    return exp_dir / 'checkpoints' / model_name
 
 
 def get_test_output_dir(config) -> Path:
@@ -284,3 +311,28 @@ def auto_configure_testing_paths(config):
     
     # Ensure output directory exists
     output_dir.mkdir(parents=True, exist_ok=True)
+
+
+def get_model_name_with_block_size(config, block_size=None) -> str:
+    """
+    Generate model name with block size information for sensitivity testing.
+    
+    Args:
+        config: Configuration object
+        block_size: Optional specific block size for naming
+        
+    Returns:
+        Model name string with block size suffix
+    """
+    feat_group = config.get('data.feat_group', 'xyz')
+    
+    if block_size is not None:
+        return f"best_model_{feat_group}_blk{block_size:.1f}.pth"
+    else:
+        # Check if block_size is a list (this shouldn't happen in practice for single model)
+        model_block_size = config.get('model.block_size')
+        if isinstance(model_block_size, list):
+            # This case should not happen when saving individual models
+            raise ValueError("Cannot generate single model name when block_size is a list")
+        else:
+            return f"best_model_{feat_group}_blk{model_block_size:.1f}.pth"

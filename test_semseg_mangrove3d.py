@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import logging
 import numpy as np
 import os
@@ -11,7 +12,7 @@ from tqdm import tqdm
 from typing import Tuple, Dict, Any
 
 from data_utils.Mangrove3DDataLoader import Mangrove3DTestDataset
-from tools import calc_metrics
+from tools import calc_metrics, write_eval_metrics_to_file
 from params.config_loader import load_config, create_test_parser
 from config_utils import parse_test_args
 from common_utils import (
@@ -40,8 +41,8 @@ def load_model(model_path: Path, config) -> torch.nn.Module:
     return model.eval()
 
 
-def run_inference(model: torch.nn.Module, dataset: Mangrove3DTestDataset, test_idx: int, 
-                 batch_size: int, num_votes: int, config, logger: logging.Logger) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def run_inference_single(model: torch.nn.Module, dataset: Mangrove3DTestDataset, test_idx: int, 
+                        batch_size: int, num_votes: int, config, logger: logging.Logger) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Run inference on a single test file with voting."""
     whole_scene_data = dataset.scene_points_list[test_idx]
     whole_scene_label = dataset.semantic_labels_list[test_idx]
@@ -79,6 +80,110 @@ def run_inference(model: torch.nn.Module, dataset: Mangrove3DTestDataset, test_i
                           pred_labels[:batch_size_actual], batch_weights[:batch_size_actual])
     
     return np.argmax(vote_pool, 1), whole_scene_data, whole_scene_label
+
+
+def run_inference(model: torch.nn.Module, dataset: Mangrove3DTestDataset, test_idx: int, 
+                 batch_size: int, num_votes: int, config, logger: logging.Logger, output_dir: Path) -> Dict[str, Any]:
+    """
+    Run inference on test dataset(s).
+    
+    Args:
+        model: Trained model
+        dataset: Test dataset
+        test_idx: Test index (-1 for all files, >=0 for specific file)
+        batch_size: Batch size for inference
+        num_votes: Number of voting rounds
+        config: Configuration object
+        logger: Logger
+        output_dir: Output directory for results
+        
+    Returns:
+        Dictionary containing aggregated metrics
+    """
+    if test_idx == -1:
+        # Run inference on all available test files
+        logger.info(f"Running inference on ALL {len(dataset)} test files")
+        all_metrics = []
+        overall_predictions = []
+        overall_ground_truth = []
+        
+        for idx in range(len(dataset)):
+            logger.info(f"\n{'='*60}")
+            logger.info(f"Processing test file {idx+1}/{len(dataset)} (index {idx})")
+            logger.info(f"{'='*60}")
+            
+            # Run inference on single file
+            pred_labels, scene_data, gt_labels = run_inference_single(
+                model, dataset, idx, batch_size, num_votes, config, logger
+            )
+            
+            # Evaluate single file
+            metrics = evaluate_predictions(pred_labels, gt_labels, config, logger)
+            all_metrics.append(metrics)
+            
+            # Save individual results
+            write_eval_metrics_to_file(metrics, output_dir, f"{idx:02d}")
+            
+            # Save visualization if enabled
+            if config.get('testing.visual'):
+                file_stem = Path(dataset.pcd_file_paths[idx]).stem
+                output_path = output_dir / f"{file_stem}_predictions.csv"
+                save_visualization(scene_data, pred_labels, output_path, config, logger)
+            
+            # Accumulate for overall statistics
+            overall_predictions.extend(pred_labels)
+            overall_ground_truth.extend(gt_labels)
+        
+        # Calculate overall metrics across all files
+        logger.info(f"\n{'='*60}")
+        logger.info("OVERALL RESULTS ACROSS ALL TEST FILES")
+        logger.info(f"{'='*60}")
+        
+        overall_metrics = evaluate_predictions(
+            np.array(overall_predictions), np.array(overall_ground_truth), config, logger
+        )
+        
+        # Save overall metrics
+        write_eval_metrics_to_file(overall_metrics, output_dir, "overall")
+        
+        # Calculate and log per-file statistics
+        logger.info(f"\n{'='*60}")
+        logger.info("PER-FILE SUMMARY")
+        logger.info(f"{'='*60}")
+        
+        mean_ious = [m['mean_iou'] for m in all_metrics]
+        overall_accs = [m['overall_accuracy'] for m in all_metrics]
+        
+        logger.info(f"Mean IoU - Average: {np.mean(mean_ious):.4f}, Std: {np.std(mean_ious):.4f}")
+        logger.info(f"Mean IoU - Min: {np.min(mean_ious):.4f}, Max: {np.max(mean_ious):.4f}")
+        logger.info(f"Overall Acc - Average: {np.mean(overall_accs):.4f}, Std: {np.std(overall_accs):.4f}")
+        logger.info(f"Overall Acc - Min: {np.min(overall_accs):.4f}, Max: {np.max(overall_accs):.4f}")
+        
+        # Log individual file results
+        logger.info("\nIndividual file results:")
+        for idx, metrics in enumerate(all_metrics):
+            file_stem = Path(dataset.pcd_file_paths[idx]).stem
+            logger.info(f"  {file_stem}: mIoU={metrics['mean_iou']:.4f}, Acc={metrics['overall_accuracy']:.4f}")
+        
+        return overall_metrics
+        
+    else:
+        # Run inference on single file (original behavior)
+        logger.info(f"Running inference on single test file (index {test_idx})")
+        pred_labels, scene_data, gt_labels = run_inference_single(
+            model, dataset, test_idx, batch_size, num_votes, config, logger
+        )
+        
+        # Evaluate and save results
+        metrics = evaluate_predictions(pred_labels, gt_labels, config, logger)
+        write_eval_metrics_to_file(metrics, output_dir, f"{test_idx:02d}")
+        
+        if config.get('testing.visual'):
+            file_stem = Path(dataset.pcd_file_paths[test_idx]).stem
+            output_path = output_dir / f"{file_stem}_predictions.csv"
+            save_visualization(scene_data, pred_labels, output_path, config, logger)
+        
+        return metrics
 
 
 def _add_votes(vote_pool: np.ndarray, point_idx: np.ndarray, pred_label: np.ndarray, weights: np.ndarray):
@@ -147,56 +252,221 @@ def save_visualization(scene_data: np.ndarray, pred_labels: np.ndarray,
     logger.info(f"Visualization saved to: {output_path}")
 
 
-def main():
-    """Main testing function."""
-    start_time = time.time()
-    args, config = parse_args()
+def test_single_block_size(args, config, block_size, model_path):
+    """Test a model with a specific block size."""
+    print(f"\n{'='*80}")
+    print(f"TESTING MODEL WITH BLOCK SIZE: {block_size:.1f}m")
+    print(f"Model: {model_path}")
+    print(f"{'='*80}")
+    
+    # Create a modified config for this specific block size
+    config_copy = config.copy()
+    config_copy.set('model.block_size', block_size)
     
     # Setup environment and directories
-    setup_environment(config.get('hardware.gpu'))
-    output_dir = Path(config.get('testing.output_dir'))
-    output_dir.mkdir(exist_ok=True)
+    setup_environment(config_copy.get('hardware.gpu'))
+    
+    # Create output directory for this block size
+    base_output_dir = Path(config_copy.get('data.root_dir')) / 'test_results'
+    output_dir = base_output_dir / f"blk{block_size:.1f}"
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     logger = setup_logging(output_dir)
-    log_experiment_info(args, config, logger)
+    log_experiment_info(args, config_copy, logger)
     
     # Log auto-generated paths
     logger.info("=" * 60)
-    logger.info("AUTO-GENERATED PATHS")
+    logger.info("BLOCK SIZE TESTING")
     logger.info("=" * 60)
-    logger.info(f"Model path: {config.get('testing.model_path')}")
-    logger.info(f"Output directory: {config.get('testing.output_dir')}")
+    logger.info(f"Block size: {block_size:.1f}m")
+    logger.info(f"Model path: {model_path}")
+    logger.info(f"Output directory: {output_dir}")
     logger.info("=" * 60)
     
     # Load dataset and model
     dataset = Mangrove3DTestDataset(
-        data_root=config.get('data.root_dir'),
+        data_root=config_copy.get('data.root_dir'),
         split='test',
-        block_points=config.get('testing.block_points'),
-        num_class=config.get('model.num_classes')
+        feat_group=config_copy.get('data.feat_group'),
+        block_points=config_copy.get('testing.block_points'),
+        num_class=config_copy.get('model.num_classes'),
+        block_size=block_size  # Use the specific block size
     )
     logger.info(f"Loaded test dataset with {len(dataset)} files")
     
-    model = load_model(Path(config.get('testing.model_path')), config)
-    logger.info(f"Loaded model from: {config.get('testing.model_path')}")
+    if not Path(model_path).exists():
+        error_msg = f"Model file not found: {model_path}"
+        logger.error(error_msg)
+        print(f"✗ {error_msg}")
+        return None
+    
+    model = load_model(Path(model_path), config_copy)
+    logger.info(f"Loaded model from: {model_path}")
     
     # Run inference
-    pred_labels, scene_data, gt_labels = run_inference(
-        model, dataset, config.get('testing.test_idx'), config.get('testing.batch_size'),
-        config.get('testing.num_votes'), config, logger
+    metrics = run_inference(
+        model, dataset, config_copy.get('testing.test_idx'), config_copy.get('testing.batch_size'),
+        config_copy.get('testing.num_votes'), config_copy, logger, output_dir
     )
     
-    # Evaluate and save results
-    metrics = evaluate_predictions(pred_labels, gt_labels, config, logger)
+    logger.info(f"Testing completed for block size {block_size:.1f}m")
+    logger.info(f"Final mIoU: {metrics['mean_iou']:.4f}")
     
-    if config.get('testing.visual'):
-        file_stem = Path(dataset.pcd_file_paths[config.get('testing.test_idx')]).stem
-        output_path = output_dir / f"{file_stem}_predictions.csv"
-        save_visualization(scene_data, pred_labels, output_path, config, logger)
+    return metrics['mean_iou']
+
+
+def main():
+    """Main testing function with block size sensitivity support."""
+    start_time = time.time()
+    args, config = parse_args()
+    
+    # Check if block_size is a list (sensitivity testing) or single value
+    block_size_param = config.get('model.block_size')
+    
+    if isinstance(block_size_param, list):
+        # Multiple block sizes - sensitivity testing
+        print(f"\n{'='*80}")
+        print(f"BLOCK SIZE SENSITIVITY TESTING")
+        print(f"Testing block sizes: {block_size_param}")
+        print(f"{'='*80}")
+        
+        # Load the block size sensitivity results to find model paths
+        results_path = Path('./log/sem_seg/block_size_sensitivity_results.json')
+        if not results_path.exists():
+            print(f"Error: Sensitivity results file not found: {results_path}")
+            print("Please run training with block size sensitivity first.")
+            return
+        
+        import json
+        with open(results_path, 'r') as f:
+            sensitivity_data = json.load(f)
+        
+        test_results = {}
+        
+        for block_size in block_size_param:
+            block_size_str = str(block_size)
+            if block_size_str in sensitivity_data['model_paths'] and sensitivity_data['model_paths'][block_size_str]:
+                model_path = sensitivity_data['model_paths'][block_size_str]
+                
+                print(f"\n{'='*60}")
+                print(f"Testing block size: {block_size:.1f}m")
+                print(f"{'='*60}")
+                
+                try:
+                    mIoU = test_single_block_size(args, config, block_size, model_path)
+                    test_results[block_size] = mIoU
+                    print(f"✓ Block size {block_size:.1f}m completed. mIoU: {mIoU:.6f}")
+                    
+                except Exception as e:
+                    print(f"✗ Block size {block_size:.1f}m failed: {str(e)}")
+                    test_results[block_size] = None
+            else:
+                print(f"✗ No trained model found for block size {block_size:.1f}m")
+                test_results[block_size] = None
+        
+        # Print summary
+        print(f"\n{'='*80}")
+        print(f"BLOCK SIZE SENSITIVITY TEST RESULTS")
+        print(f"{'='*80}")
+        print(f"{'Block Size (m)':<15} {'Training mIoU':<15} {'Test mIoU':<12}")
+        print("-" * 80)
+        
+        best_test_block_size = None
+        best_test_iou = 0
+        
+        for block_size in block_size_param:
+            train_iou = sensitivity_data['results'].get(str(block_size))
+            test_iou = test_results[block_size]
+            
+            train_str = f"{train_iou:.6f}" if train_iou else "FAILED"
+            test_str = f"{test_iou:.6f}" if test_iou else "FAILED"
+            
+            print(f"{block_size:<15.1f} {train_str:<15} {test_str:<12}")
+            
+            if test_iou is not None and test_iou > best_test_iou:
+                best_test_iou = test_iou
+                best_test_block_size = block_size
+        
+        print("-" * 80)
+        if best_test_block_size is not None:
+            print(f"Best test performance: Block size {best_test_block_size:.1f}m with mIoU {best_test_iou:.6f}")
+        else:
+            print("All block size tests failed!")
+        
+        # Save test results summary
+        test_summary_path = Path('./log/sem_seg/block_size_test_results.json')
+        test_summary_data = {
+            'block_sizes': block_size_param,
+            'train_results': sensitivity_data['results'],
+            'test_results': {str(k): v for k, v in test_results.items()},
+            'best_train_block_size': sensitivity_data.get('best_block_size'),
+            'best_train_iou': sensitivity_data.get('best_iou'),
+            'best_test_block_size': best_test_block_size,
+            'best_test_iou': best_test_iou,
+            'feat_group': config.get('data.feat_group'),
+            'npoint': config.get('model.npoint'),
+            'timestamp': datetime.datetime.now().isoformat()
+        }
+        
+        with open(test_summary_path, 'w') as f:
+            json.dump(test_summary_data, f, indent=2)
+        
+        print(f"\nTest results summary saved to: {test_summary_path}")
+        
+    else:
+        # Single block size - original behavior
+        print(f"Testing single model with block size: {block_size_param:.1f}m")
+        
+        # Setup environment and directories
+        setup_environment(config.get('hardware.gpu'))
+        output_dir = Path(config.get('testing.output_dir'))
+        output_dir.mkdir(exist_ok=True)
+        
+        logger = setup_logging(output_dir)
+        log_experiment_info(args, config, logger)
+        
+        # Log auto-generated paths
+        logger.info("=" * 60)
+        logger.info("AUTO-GENERATED PATHS")
+        logger.info("=" * 60)
+        logger.info(f"Model path: {config.get('testing.model_path')}")
+        logger.info(f"Output directory: {config.get('testing.output_dir')}")
+        logger.info("=" * 60)
+        
+        # Load dataset and model
+        dataset = Mangrove3DTestDataset(
+            data_root=config.get('data.root_dir'),
+            split='test',
+            feat_group=config.get('data.feat_group'),
+            block_points=config.get('testing.block_points'),
+            num_class=config.get('model.num_classes'),
+            block_size=config.get('model.block_size') 
+        )
+        logger.info(f"Loaded test dataset with {len(dataset)} files")
+        
+        model = load_model(Path(config.get('testing.model_path')), config)
+        logger.info(f"Loaded model from: {config.get('testing.model_path')}")
+        
+        # Run inference
+        metrics = run_inference(
+            model, dataset, config.get('testing.test_idx'), config.get('testing.batch_size'),
+            config.get('testing.num_votes'), config, logger, output_dir
+        )
+        
+        elapsed_time = time.time() - start_time
+        logger.info(f"Testing completed in {elapsed_time:.2f} seconds")
+        logger.info(f"Final mIoU: {metrics['mean_iou']:.4f}")
+        
+        # Log summary based on test mode
+        test_idx = config.get('testing.test_idx')
+        if test_idx == -1:
+            logger.info(f"Processed ALL {len(dataset)} test files")
+            logger.info("Check individual file results in the output directory")
+        else:
+            logger.info(f"Processed single test file (index {test_idx})")
     
     elapsed_time = time.time() - start_time
-    logger.info(f"Testing completed in {elapsed_time:.2f} seconds")
-    logger.info(f"Final mIoU: {metrics['mean_iou']:.4f}")
+    print(f"\nTotal testing time: {elapsed_time:.2f} seconds")
 
 
 if __name__ == '__main__':

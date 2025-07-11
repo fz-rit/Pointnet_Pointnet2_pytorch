@@ -23,7 +23,20 @@ def get_feat_group(feat_group: str) -> List[str]:
         "xyz_irz": ['X', 'Y', 'Z', 'intensity_adjusted', 'range_adjusted', 'z_adjusted'],
         "xyz_p3": ['X', 'Y', 'Z', 'PCA1', 'PCA2', 'PCA3'],
         "xyz_cap": ['X', 'Y', 'Z', 'curvature', 'anisotropy', 'planarity'],
-        "xyz_n3": ['X', 'Y', 'Z', 'Pseudo-Rn', 'Pseudo-Gn', 'Pseudo-Bn']
+        "xyz_n3": ['X', 'Y', 'Z', 'Pseudo-Rn', 'Pseudo-Gn', 'Pseudo-Bn'],
+        "xyz_rgb": ['X', 'Y', 'Z', 'R', 'G', 'B'],  # RGB color features
+        "xyz_irz_n3": ['X', 'Y', 'Z', 
+                       'intensity_adjusted', 'range_adjusted', 'z_adjusted', 
+                       'Pseudo-Rn', 'Pseudo-Gn', 'Pseudo-Bn'],
+        "xyz_irz_n3_cap": ['X', 'Y', 'Z', 
+                           'intensity_adjusted', 'range_adjusted', 'z_adjusted', 
+                           'Pseudo-Rn', 'Pseudo-Gn', 'Pseudo-Bn', 
+                           'curvature', 'anisotropy', 'planarity'],
+        "xyz_irz_n3_cap_p3": ['X', 'Y', 'Z', 
+                              'intensity_adjusted', 'range_adjusted', 'z_adjusted', 
+                              'Pseudo-Rn', 'Pseudo-Gn', 'Pseudo-Bn', 
+                              'curvature', 'anisotropy', 'planarity', 
+                              'PCA1', 'PCA2', 'PCA3'],
     }
     if feat_group not in feat_groups:
         raise ValueError(f"Invalid color group '{feat_group}'. Valid: {list(feat_groups.keys())}")

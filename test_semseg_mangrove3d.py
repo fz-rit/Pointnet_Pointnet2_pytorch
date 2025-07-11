@@ -129,7 +129,7 @@ def run_inference(model: torch.nn.Module, dataset: Mangrove3DTestDataset, test_i
             if config.get('testing.visual'):
                 file_stem = Path(dataset.pcd_file_paths[idx]).stem
                 output_path = output_dir / f"{file_stem}_predictions.csv"
-                save_visualization(scene_data, pred_labels, output_path, config, logger)
+                save_visualization(scene_data, gt_labels, pred_labels, output_path, config, logger)
             
             # Accumulate for overall statistics
             overall_predictions.extend(pred_labels)
@@ -237,20 +237,22 @@ def evaluate_predictions(pred_labels: np.ndarray, gt_labels: np.ndarray, config,
     }
 
 
-def save_visualization(scene_data: np.ndarray, pred_labels: np.ndarray, 
+def save_visualization(scene_data: np.ndarray, gt_labels: np.ndarray, pred_labels: np.ndarray, 
                       output_path: Path, config, logger: logging.Logger):
     """Save prediction visualization as CSV."""
     color_map = np.array(config.get('classes.colors'))
     pred_colors = color_map[pred_labels]
+    gt_colors = color_map[gt_labels]
     
     vis_data = pd.DataFrame({
         'x': scene_data[:, 0],
         'y': scene_data[:, 1], 
         'z': scene_data[:, 2],
-        'r': pred_colors[:, 0],
-        'g': pred_colors[:, 1],
-        'b': pred_colors[:, 2],
-        'label': pred_labels + 1  # Convert back to 1-based for visualization
+        'gt_r': gt_colors[:, 0],
+        'gt_g': gt_colors[:, 1],
+        'gt_b': gt_colors[:, 2],
+        'gt_label': gt_labels + 1,  # Convert back to 1-based for visualization
+        'pred_label': pred_labels + 1  # Convert back to 1-based for visualization
     })
     
     vis_data.to_csv(output_path, index=False)
